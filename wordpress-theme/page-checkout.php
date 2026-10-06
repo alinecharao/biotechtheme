@@ -3164,7 +3164,11 @@ get_header();
 </div>
 
 <?php if ($pagseguro_active): ?>
-<script src="https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js"></script>
+<script
+    src="https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js"
+    data-cfasync="false"
+    data-no-optimize="1"
+    data-no-minify="1"></script>
 <?php endif; ?>
 
 <script>
@@ -3172,6 +3176,69 @@ var originalPrice = <?php echo floatval($subtotal); ?>;
 var checkoutPaymentGateway = <?php echo wp_json_encode($payment_gateway); ?>;
 var pagseguroPublicKey = <?php echo wp_json_encode($pagseguro_public_key); ?>;
 var pagseguroPublicKeyError = <?php echo wp_json_encode($pagseguro_public_key_error); ?>;
+var pagseguroSdkUrl = 'https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js';
+var pagseguroSdkPromise = null;
+
+function ensurePagSeguroSdk() {
+    if (window.PagSeguro && typeof window.PagSeguro.encryptCard === 'function') {
+        return Promise.resolve(window.PagSeguro);
+    }
+
+    if (pagseguroSdkPromise) {
+        return pagseguroSdkPromise;
+    }
+
+    pagseguroSdkPromise = new Promise(function(resolve, reject) {
+        var settled = false;
+        var timeoutId = null;
+
+        function finishOk() {
+            if (settled) return;
+            if (window.PagSeguro && typeof window.PagSeguro.encryptCard === 'function') {
+                settled = true;
+                if (timeoutId) clearTimeout(timeoutId);
+                resolve(window.PagSeguro);
+            }
+        }
+
+        function finishError(message) {
+            if (settled) return;
+            settled = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            pagseguroSdkPromise = null;
+            reject(new Error(message || 'SDK do PagBank indisponível.'));
+        }
+
+        // Se um otimizador atrasou ou alterou a tag original, criamos uma tag limpa.
+        var script = document.createElement('script');
+        script.src = pagseguroSdkUrl;
+        script.async = true;
+        script.setAttribute('data-cfasync', 'false');
+        script.setAttribute('data-no-optimize', '1');
+        script.setAttribute('data-no-minify', '1');
+        script.onload = function() {
+            finishOk();
+            if (!settled) {
+                finishError('O SDK do PagBank carregou, mas a função de criptografia não ficou disponível.');
+            }
+        };
+        script.onerror = function() {
+            finishError('O navegador não conseguiu baixar o SDK de criptografia do PagBank.');
+        };
+
+        timeoutId = setTimeout(function() {
+            finishOk();
+            if (!settled) {
+                finishError('Tempo excedido ao carregar o SDK de criptografia do PagBank.');
+            }
+        }, 10000);
+
+        document.head.appendChild(script);
+    });
+
+    return pagseguroSdkPromise;
+}
+
 var courseDiscountTotal = 0;
 var eligibleSubtotal = <?php echo floatval($subtotal); ?>;
 var couponDiscount = 0;
@@ -3985,8 +4052,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // PagBank: criptografar localmente antes do navegador serializar o formulário.
-        // Número, validade e CVV são desabilitados após a criptografia para não serem enviados ao PHP.
+        // PagBank: interrompe o POST, garante que o SDK esteja carregado,
+        // criptografa no navegador e só então envia o formulário.
         checkoutForm.addEventListener('submit', function(e) {
             if (e.defaultPrevented) return;
 
@@ -4001,15 +4068,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (!pagseguroPublicKey) {
-                e.preventDefault();
-                alert(pagseguroPublicKeyError || 'Não foi possível obter a chave pública do PagBank. Atualize a página e tente novamente.');
-                return false;
-            }
+            e.preventDefault();
 
-            if (typeof window.PagSeguro === 'undefined' || typeof window.PagSeguro.encryptCard !== 'function') {
-                e.preventDefault();
-                alert('Não foi possível carregar a criptografia segura do PagBank. Atualize a página e tente novamente.');
+            if (!pagseguroPublicKey) {
+                alert(pagseguroPublicKeyError || 'Não foi possível obter a chave pública do PagBank. Atualize a página e tente novamente.');
                 return false;
             }
 
@@ -4018,14 +4080,21 @@ document.addEventListener('DOMContentLoaded', function() {
             var expiryField = document.getElementById('card_expiry');
             var cvvField = document.getElementById('card_cvv');
             var encryptedField = document.getElementById('pagseguro_encrypted_card');
+            var submitButton = document.getElementById('submit_btn');
 
-            var expiry = expiryField ? expiryField.value.trim().split('/') : [];
-            var expMonth = expiry[0] || '';
-            var expYear = expiry[1] || '';
-            if (expYear.length === 2) expYear = '20' + expYear;
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.style.opacity = '0.6';
+                submitButton.style.cursor = 'not-allowed';
+            }
 
-            try {
-                var encryptedResult = window.PagSeguro.encryptCard({
+            ensurePagSeguroSdk().then(function(PagSeguroSdk) {
+                var expiry = expiryField ? expiryField.value.trim().split('/') : [];
+                var expMonth = expiry[0] || '';
+                var expYear = expiry[1] || '';
+                if (expYear.length === 2) expYear = '20' + expYear;
+
+                var encryptedResult = PagSeguroSdk.encryptCard({
                     publicKey: pagseguroPublicKey,
                     holder: holderField ? holderField.value.trim() : '',
                     number: numberField ? numberField.value.replace(/\D/g, '') : '',
@@ -4035,29 +4104,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (!encryptedResult || encryptedResult.hasErrors || !encryptedResult.encryptedCard) {
-                    e.preventDefault();
                     var detail = '';
                     if (encryptedResult && Array.isArray(encryptedResult.errors) && encryptedResult.errors.length) {
                         detail = encryptedResult.errors.map(function(err) {
                             return err.message || err.code || '';
                         }).filter(Boolean).join('\n');
                     }
-                    alert('Não foi possível criptografar os dados do cartão.' + (detail ? '\n' + detail : ' Verifique os dados e tente novamente.'));
-                    return false;
+                    throw new Error('Não foi possível criptografar os dados do cartão.' + (detail ? '\n' + detail : ' Verifique os dados e tente novamente.'));
                 }
 
                 encryptedField.value = encryptedResult.encryptedCard;
 
-                // Esses campos já estão encapsulados em encryptedCard e não devem chegar ao servidor.
+                // PAN, validade e CVV ficam somente no navegador e não entram no POST.
                 if (numberField) numberField.disabled = true;
                 if (expiryField) expiryField.disabled = true;
                 if (cvvField) cvvField.disabled = true;
-            } catch (err) {
-                e.preventDefault();
+
+                // form.submit() não inclui o botão submitter; preservar o sinalizador usado pelo PHP.
+                var checkoutSubmitHidden = checkoutForm.querySelector('input[type="hidden"][name="checkout_submit"]');
+                if (!checkoutSubmitHidden) {
+                    checkoutSubmitHidden = document.createElement('input');
+                    checkoutSubmitHidden.type = 'hidden';
+                    checkoutSubmitHidden.name = 'checkout_submit';
+                    checkoutForm.appendChild(checkoutSubmitHidden);
+                }
+                checkoutSubmitHidden.value = '1';
+
+                // Envia sem disparar novamente os listeners de submit.
+                HTMLFormElement.prototype.submit.call(checkoutForm);
+            }).catch(function(err) {
                 console.error('PagBank card encryption error:', err);
-                alert('Não foi possível criptografar os dados do cartão. Atualize a página e tente novamente.');
-                return false;
-            }
+                alert(err && err.message ? err.message : 'Não foi possível carregar a criptografia segura do PagBank. Atualize a página e tente novamente.');
+
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.style.opacity = '';
+                    submitButton.style.cursor = '';
+                }
+            });
+
+            return false;
         });
     }
 });
