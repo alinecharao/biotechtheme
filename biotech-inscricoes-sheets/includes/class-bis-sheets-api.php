@@ -92,6 +92,12 @@ class BIS_Sheets_API {
         )));
     }
 
+    public function tab_has_values($spreadsheet_id, $title) {
+        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . $this->range($title, 'A1:M5'));
+        if (is_wp_error($result)) return $result;
+        return !empty($result['values']);
+    }
+
     public function order_index($spreadsheet_id, $title) {
         $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . $this->range($title, 'M6:M'));
         if (is_wp_error($result)) return $result;
