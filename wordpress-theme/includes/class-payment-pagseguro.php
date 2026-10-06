@@ -44,6 +44,54 @@ class Cursos_Payment_PagSeguro {
     public function get_ambiente() {
         return $this->ambiente;
     }
+
+    /**
+     * Obter chave pública usada para criptografar cartões no navegador.
+     * Consulta primeiro uma chave existente e cria uma nova somente se necessário.
+     */
+    public function get_public_key() {
+        if (!$this->is_active()) {
+            return array(
+                'success' => false,
+                'error' => 'PagSeguro não está ativo ou configurado.',
+            );
+        }
+
+        $cache_key = 'cursos_pagseguro_public_key_' . $this->ambiente;
+        $cached = get_transient($cache_key);
+        if (!empty($cached)) {
+            return array(
+                'success' => true,
+                'public_key' => $cached,
+                'source' => 'cache',
+            );
+        }
+
+        // A API oficial permite consultar a chave de cartão em /public-keys/card.
+        $result = $this->request('/public-keys/card', 'GET');
+
+        // Se ainda não existir uma chave para cartão, criar uma.
+        if (!$result['success'] || empty($result['data']['public_key'])) {
+            $result = $this->request('/public-keys', 'POST', array('type' => 'card'));
+        }
+
+        if ($result['success'] && !empty($result['data']['public_key'])) {
+            $public_key = trim((string) $result['data']['public_key']);
+            set_transient($cache_key, $public_key, 6 * HOUR_IN_SECONDS);
+
+            return array(
+                'success' => true,
+                'public_key' => $public_key,
+                'source' => 'api',
+            );
+        }
+
+        return array(
+            'success' => false,
+            'error' => $result['error'] ?? 'Não foi possível obter a chave pública do PagBank.',
+            'data' => $result['data'] ?? null,
+        );
+    }
     
     /**
      * Testar conexão com a API do PagSeguro
@@ -215,6 +263,20 @@ class Cursos_Payment_PagSeguro {
                 ),
             );
         } elseif ($order_data['payment_method'] === 'credit_card') {
+            $encrypted_card = isset($order_data['card']['encrypted'])
+                ? trim((string) $order_data['card']['encrypted'])
+                : '';
+
+            if ($encrypted_card === '') {
+                return array(
+                    'success' => false,
+                    'error' => 'Cartão não criptografado. Atualize a página e tente novamente.',
+                );
+            }
+
+            $holder_name = sanitize_text_field($order_data['card']['holder_name'] ?? '');
+            $holder_tax_id = preg_replace('/[^0-9]/', '', (string) ($order_data['card']['holder_tax_id'] ?? $order_data['customer']['cpf'] ?? ''));
+
             $data['charges'] = array(
                 array(
                     'reference_id' => $order_data['reference_id'],
@@ -228,13 +290,12 @@ class Cursos_Payment_PagSeguro {
                         'installments' => $order_data['installments'] ?? 1,
                         'capture' => true,
                         'card' => array(
-                            'number' => preg_replace('/[^0-9]/', '', $order_data['card']['number']),
-                            'exp_month' => $order_data['card']['exp_month'],
-                            'exp_year' => $order_data['card']['exp_year'],
-                            'security_code' => $order_data['card']['cvv'],
-                            'holder' => array(
-                                'name' => $order_data['card']['holder_name'],
-                            ),
+                            'encrypted' => $encrypted_card,
+                            'store' => false,
+                        ),
+                        'holder' => array(
+                            'name' => $holder_name,
+                            'tax_id' => $holder_tax_id,
                         ),
                     ),
                 ),
@@ -493,6 +554,17 @@ class Cursos_Payment_PagSeguro {
         
         // Montar charge com juros do comprador se houver
         if ($order_data['payment_method'] === 'credit_card') {
+            $encrypted_card = isset($order_data['card']['encrypted'])
+                ? trim((string) $order_data['card']['encrypted'])
+                : '';
+
+            if ($encrypted_card === '') {
+                return array(
+                    'success' => false,
+                    'error' => 'Cartão não criptografado. Atualize a página e tente novamente.',
+                );
+            }
+
             $charge_amount = array(
                 'value' => intval($order_data['item']['amount'] * 100),
                 'currency' => 'BRL',
@@ -508,6 +580,9 @@ class Cursos_Payment_PagSeguro {
                     ),
                 );
             }
+
+            $holder_name = sanitize_text_field($order_data['card']['holder_name'] ?? '');
+            $holder_tax_id = preg_replace('/[^0-9]/', '', (string) ($order_data['card']['holder_tax_id'] ?? $order_data['customer']['cpf'] ?? ''));
             
             $data['charges'] = array(
                 array(
@@ -519,13 +594,12 @@ class Cursos_Payment_PagSeguro {
                         'installments' => $order_data['installments'] ?? 1,
                         'capture' => true,
                         'card' => array(
-                            'number' => preg_replace('/[^0-9]/', '', $order_data['card']['number']),
-                            'exp_month' => $order_data['card']['exp_month'],
-                            'exp_year' => $order_data['card']['exp_year'],
-                            'security_code' => $order_data['card']['cvv'],
-                            'holder' => array(
-                                'name' => $order_data['card']['holder_name'],
-                            ),
+                            'encrypted' => $encrypted_card,
+                            'store' => false,
+                        ),
+                        'holder' => array(
+                            'name' => $holder_name,
+                            'tax_id' => $holder_tax_id,
                         ),
                     ),
                 ),
