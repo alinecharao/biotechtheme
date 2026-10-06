@@ -118,10 +118,15 @@ class BIS_Sync {
         }
         $renamed = 0;
         $rename_errors = 0;
+        $blank_removed = 0;
         if ($manual) {
+            $cleanup = $this->cleanup_blank_tabs();
+            $blank_removed = $cleanup['removed'];
+            $rename_errors += $cleanup['errors'];
+
             $rename_result = $this->rename_existing_tabs();
             $renamed = $rename_result['renamed'];
-            $rename_errors = $rename_result['errors'];
+            $rename_errors += $rename_result['errors'];
         }
         $cursor = absint(get_option('bis_reconcile_cursor', 0));
         $limit = 50;
@@ -140,7 +145,14 @@ class BIS_Sync {
             update_option('bis_reconcile_cursor', 0, false);
             $ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM {$orders} ORDER BY id ASC LIMIT %d", $limit));
         }
-        $result = array('checked' => count($ids), 'synced' => 0, 'ignored' => 0, 'errors' => $rename_errors, 'renamed' => $renamed);
+        $result = array(
+            'checked' => count($ids),
+            'synced' => 0,
+            'ignored' => 0,
+            'errors' => $rename_errors,
+            'renamed' => $renamed,
+            'blank_removed' => $blank_removed,
+        );
         foreach ($ids as $id) {
             $order_id = absint($id);
             $sync = $this->sync_order($order_id);
@@ -229,6 +241,41 @@ class BIS_Sync {
         );
 
         return $this->find_tab($course_id, $class_id);
+    }
+
+    private function cleanup_blank_tabs() {
+        global $wpdb;
+        $tabs = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs ORDER BY spreadsheet_id ASC, id ASC");
+        $result = array('removed' => 0, 'errors' => 0);
+
+        foreach ((array) $tabs as $tab) {
+            $has_values = $this->api->tab_has_values($tab->spreadsheet_id, $tab->sheet_title);
+            if (is_wp_error($has_values)) {
+                // Se a guia já não existe no Google, apenas remover o mapeamento órfão.
+                $status = (array) $has_values->get_error_data();
+                if (!empty($status['status']) && intval($status['status']) === 400) {
+                    $wpdb->delete($wpdb->prefix . 'bis_sheet_tabs', array('id' => absint($tab->id)), array('%d'));
+                } else {
+                    $result['errors']++;
+                }
+                continue;
+            }
+
+            if ($has_values) continue;
+
+            $deleted = $this->api->delete_tab($tab->spreadsheet_id, $tab->sheet_id);
+            if (is_wp_error($deleted)) {
+                $result['errors']++;
+                $this->log('error', 'Não foi possível remover guia vazia ' . $tab->sheet_title . ': ' . $deleted->get_error_message(), 0, absint($tab->course_id));
+                continue;
+            }
+
+            $wpdb->delete($wpdb->prefix . 'bis_sheet_tabs', array('id' => absint($tab->id)), array('%d'));
+            $result['removed']++;
+            $this->log('removed_blank_tab', 'Guia vazia removida: ' . $tab->sheet_title . '.', 0, absint($tab->course_id));
+        }
+
+        return $result;
     }
 
     private function rename_existing_tabs() {
