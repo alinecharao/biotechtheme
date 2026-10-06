@@ -6110,7 +6110,7 @@ function cursos_security_headers() {
     // Content Security Policy - proteção contra XSS e injeção de scripts
     // Permite scripts inline (necessários para WordPress/Elementor) mas restringe origens externas
     $csp = "default-src 'self' https:; ";
-    $csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.youtube.com https://player.vimeo.com https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com; ";
+    $csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.youtube.com https://player.vimeo.com https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://assets.pagseguro.com.br; ";
     $csp .= "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com https://www.gstatic.com; ";
     $csp .= "font-src 'self' https://fonts.gstatic.com data:; ";
     $csp .= "img-src 'self' data: https: blob:; ";
