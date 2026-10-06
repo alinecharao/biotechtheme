@@ -1,0 +1,1913 @@
+{
+  "version": "0.4",
+  "title": "Pós-Graduação",
+  "type": "page",
+  "content": [
+    {
+      "id": "hero-section",
+      "elType": "section",
+      "settings": {
+        "layout": "full_width",
+        "height": "min-height",
+        "custom_height": {
+          "unit": "vh",
+          "size": 80
+        },
+        "background_background": "gradient",
+        "background_color": "#166534",
+        "background_color_b": "#15803d",
+        "background_gradient_angle": {
+          "unit": "deg",
+          "size": 135
+        },
+        "background_overlay_background": "classic",
+        "background_overlay_image": {
+          "url": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1920&h=1080&fit=crop",
+          "id": ""
+        },
+        "background_overlay_opacity": {
+          "unit": "%",
+          "size": 0.1
+        },
+        "content_position": "middle",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "hero-inner-section",
+          "elType": "section",
+          "isInner": true,
+          "settings": {
+            "layout": "boxed",
+            "structure": "20"
+          },
+          "elements": [
+            {
+              "id": "hero-content-col",
+              "elType": "column",
+              "settings": {
+                "_column_size": 50
+              },
+              "elements": [
+                {
+                  "id": "hero-badges",
+                  "elType": "widget",
+                  "widgetType": "text-editor",
+                  "settings": {
+                    "editor": "<div style=\"display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;\"><span style=\"background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 9999px; font-size: 13px; backdrop-filter: blur(4px); display: inline-flex; align-items: center; gap: 4px;\">🎓 100% Online</span><span style=\"background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 9999px; font-size: 13px; backdrop-filter: blur(4px); display: inline-flex; align-items: center; gap: 4px;\">🏆 Certificado MEC</span><span style=\"background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; border-radius: 9999px; font-size: 13px; backdrop-filter: blur(4px); display: inline-flex; align-items: center; gap: 4px;\">⏰ 12 a 18 meses</span></div>",
+                    "align": "left"
+                  }
+                },
+                {
+                  "id": "hero-title",
+                  "elType": "widget",
+                  "widgetType": "heading",
+                  "settings": {
+                    "title": "Pós-Graduação que Transforma Carreiras",
+                    "size": "xl",
+                    "header_size": "h1",
+                    "align": "left",
+                    "title_color": "#ffffff",
+                    "typography_typography": "custom",
+                    "typography_font_size": {
+                      "unit": "px",
+                      "size": 48
+                    },
+                    "typography_font_weight": "700",
+                    "typography_line_height": {
+                      "unit": "em",
+                      "size": 1.2
+                    }
+                  }
+                },
+                {
+                  "id": "hero-subtitle",
+                  "elType": "widget",
+                  "widgetType": "text-editor",
+                  "settings": {
+                    "editor": "<p style=\"color: rgba(255,255,255,0.9); font-size: 18px; max-width: 540px; margin: 24px 0;\">Especialize-se com professores renomados, metodologia inovadora e certificação reconhecida pelo MEC. Impulsione sua carreira agora.</p>",
+                    "align": "left"
+                  }
+                },
+                {
+                  "id": "hero-buttons",
+                  "elType": "widget",
+                  "widgetType": "text-editor",
+                  "settings": {
+                    "editor": "<div style=\"display: flex; flex-wrap: wrap; gap: 16px; margin-top: 24px;\"><a href=\"#cursos\" style=\"background: #ffffff; color: #166534; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; text-decoration: none; display: inline-block;\">Ver Cursos Disponíveis</a><a href=\"#\" style=\"background: transparent; color: #ffffff; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.5);\">▶ Assistir Apresentação</a></div>",
+                    "align": "left"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "hero-pricing-col",
+              "elType": "column",
+              "settings": {
+                "_column_size": 50
+              },
+              "elements": [
+                {
+                  "id": "pricing-card",
+                  "elType": "widget",
+                  "widgetType": "text-editor",
+                  "settings": {
+                    "editor": "<div style=\"background: rgba(255,255,255,0.1); backdrop-filter: blur(12px); border-radius: 16px; padding: 32px; border: 1px solid rgba(255,255,255,0.2); text-align: center;\">\n<p style=\"color: rgba(255,255,255,0.8); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;\">Investimento a partir de</p>\n<p style=\"color: rgba(255,255,255,0.6); text-decoration: line-through; font-size: 20px; margin-bottom: 8px;\">De R$ 8.997,00</p>\n<p style=\"color: #ffffff; font-size: 48px; font-weight: 700; margin-bottom: 8px;\">R$ 5.997,00</p>\n<p style=\"color: rgba(255,255,255,0.8); margin-bottom: 24px;\">ou 12x de <strong>R$ 499,75</strong> sem juros</p>\n<a href=\"/pos-graduacao/mba-gestao-veterinaria\" style=\"display: block; background: #ffffff; color: #166534; padding: 18px 32px; border-radius: 8px; font-weight: 700; font-size: 18px; text-decoration: none; margin-bottom: 16px;\">Quero Me Matricular</a>\n<p style=\"color: rgba(255,255,255,0.7); font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;\">🛡️ Garantia de 7 dias ou seu dinheiro de volta</p>\n</div>",
+                    "align": "center"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "benefits-bar-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "30",
+        "background_background": "classic",
+        "background_color": "#f9fafb",
+        "border_border": "solid",
+        "border_width": {
+          "unit": "px",
+          "top": "1",
+          "right": "0",
+          "bottom": "1",
+          "left": "0",
+          "isLinked": false
+        },
+        "border_color": "#e5e7eb",
+        "padding": {
+          "unit": "px",
+          "top": "32",
+          "right": "20",
+          "bottom": "32",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "benefit-bar-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "benefit-bar-1",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-credit-card",
+                  "library": "fa-solid"
+                },
+                "title_text": "Parcele em até 18x",
+                "description_text": "Sem juros no cartão de crédito",
+                "position": "left",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 28
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "title_typography_font_size": {
+                  "unit": "px",
+                  "size": 16
+                },
+                "description_color": "#6b7280",
+                "description_typography_typography": "custom",
+                "description_typography_font_size": {
+                  "unit": "px",
+                  "size": 14
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "benefit-bar-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "benefit-bar-2",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-shield-alt",
+                  "library": "fa-solid"
+                },
+                "title_text": "Garantia de 7 dias",
+                "description_text": "Devolução integral se não gostar",
+                "position": "left",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 28
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "title_typography_font_size": {
+                  "unit": "px",
+                  "size": 16
+                },
+                "description_color": "#6b7280",
+                "description_typography_typography": "custom",
+                "description_typography_font_size": {
+                  "unit": "px",
+                  "size": 14
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "benefit-bar-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "benefit-bar-3",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-gift",
+                  "library": "fa-solid"
+                },
+                "title_text": "Bônus Exclusivos",
+                "description_text": "Materiais extras e mentorias",
+                "position": "left",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 28
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "title_typography_font_size": {
+                  "unit": "px",
+                  "size": 16
+                },
+                "description_color": "#6b7280",
+                "description_typography_typography": "custom",
+                "description_typography_font_size": {
+                  "unit": "px",
+                  "size": 14
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "advantages-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "advantages-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "advantages-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Diferenciais</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "advantages-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Por que escolher nossa Pós-Graduação?",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "16",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            },
+            {
+              "id": "advantages-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 16px; max-width: 700px; margin: 0 auto 40px;\">Oferecemos uma experiência de aprendizado única, combinando excelência acadêmica com flexibilidade e suporte personalizado.</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "advantages-grid-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "30",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "advantage-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "advantage-1",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-graduation-cap",
+                  "library": "fa-solid"
+                },
+                "title_text": "Certificação MEC",
+                "description_text": "Diploma reconhecido nacionalmente",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        },
+        {
+          "id": "advantage-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "advantage-2",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-globe",
+                  "library": "fa-solid"
+                },
+                "title_text": "100% Online",
+                "description_text": "Estude de qualquer lugar",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        },
+        {
+          "id": "advantage-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "advantage-3",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-users",
+                  "library": "fa-solid"
+                },
+                "title_text": "Networking Premium",
+                "description_text": "Conecte-se com profissionais",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "advantages-grid-section-2",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "30",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "advantage-4-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "advantage-4",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-headphones",
+                  "library": "fa-solid"
+                },
+                "title_text": "Suporte Dedicado",
+                "description_text": "Tutores disponíveis 24/7",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        },
+        {
+          "id": "advantage-5-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "advantage-5",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-file-alt",
+                  "library": "fa-solid"
+                },
+                "title_text": "Material Atualizado",
+                "description_text": "Conteúdo revisado mensalmente",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        },
+        {
+          "id": "advantage-6-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "advantage-6",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-chart-line",
+                  "library": "fa-solid"
+                },
+                "title_text": "Mercado Aquecido",
+                "description_text": "+40% de empregabilidade",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "how-it-works-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "how-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "how-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Processo</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "how-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Como Funciona",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "8",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            },
+            {
+              "id": "how-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 16px; max-width: 600px; margin: 0 auto 40px;\">Seu caminho para a especialização em 4 passos simples</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "how-grid-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "40",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "step-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "step-1-number",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"width: 64px; height: 64px; background: linear-gradient(135deg, #166534, #15803d); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; margin: 0 auto 16px; box-shadow: 0 4px 14px rgba(22, 101, 52, 0.3);\">1</div>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "step-1-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Escolha seu curso",
+                "size": "small",
+                "header_size": "h4",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_weight": "600",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 18
+                }
+              }
+            },
+            {
+              "id": "step-1-desc",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 14px;\">Selecione a pós-graduação ideal para seus objetivos de carreira</p>",
+                "align": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "step-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "step-2-number",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"width: 64px; height: 64px; background: linear-gradient(135deg, #166534, #15803d); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; margin: 0 auto 16px; box-shadow: 0 4px 14px rgba(22, 101, 52, 0.3);\">2</div>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "step-2-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Faça sua matrícula",
+                "size": "small",
+                "header_size": "h4",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_weight": "600",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 18
+                }
+              }
+            },
+            {
+              "id": "step-2-desc",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 14px;\">Processo 100% online, rápido e seguro. Comece a estudar imediatamente</p>",
+                "align": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "step-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "step-3-number",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"width: 64px; height: 64px; background: linear-gradient(135deg, #166534, #15803d); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; margin: 0 auto 16px; box-shadow: 0 4px 14px rgba(22, 101, 52, 0.3);\">3</div>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "step-3-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Estude no seu ritmo",
+                "size": "small",
+                "header_size": "h4",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_weight": "600",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 18
+                }
+              }
+            },
+            {
+              "id": "step-3-desc",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 14px;\">Acesse as aulas quando e onde quiser, com suporte de tutores</p>",
+                "align": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "step-4-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "step-4-number",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"width: 64px; height: 64px; background: linear-gradient(135deg, #166534, #15803d); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; margin: 0 auto 16px; box-shadow: 0 4px 14px rgba(22, 101, 52, 0.3);\">4</div>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "step-4-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Conquiste seu certificado",
+                "size": "small",
+                "header_size": "h4",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_weight": "600",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 18
+                }
+              }
+            },
+            {
+              "id": "step-4-desc",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 14px;\">Receba seu diploma de especialista reconhecido pelo MEC</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "instructors-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "instructors-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "instructors-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Corpo Docente</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "instructors-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Professores Renomados",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "16",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            },
+            {
+              "id": "instructors-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 16px; max-width: 600px; margin: 0 auto 40px;\">Aprenda com mestres e doutores que são referência em suas áreas</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "instructors-grid-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "40",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "instructor-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25
+          },
+          "elements": [
+            {
+              "id": "instructor-1-card",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff;\">\n<div style=\"position: relative; height: 256px; overflow: hidden;\">\n<img src=\"https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop\" style=\"width: 100%; height: 100%; object-fit: cover;\" />\n<div style=\"position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);\"></div>\n<div style=\"position: absolute; bottom: 16px; left: 16px; right: 16px; color: white;\">\n<h3 style=\"font-weight: 600; font-size: 18px; margin: 0;\">Dra. Ana Paula Silva</h3>\n<p style=\"color: rgba(255,255,255,0.8); font-size: 14px; margin: 4px 0 0 0;\">Especialista em Ultrassonografia</p>\n</div>\n</div>\n<div style=\"padding: 16px; display: flex; gap: 16px; color: #6b7280; font-size: 14px;\">\n<span>📚 8 cursos</span>\n<span>👥 2.450 alunos</span>\n</div>\n</div>",
+                "align": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "instructor-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25
+          },
+          "elements": [
+            {
+              "id": "instructor-2-card",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff;\">\n<div style=\"position: relative; height: 256px; overflow: hidden;\">\n<img src=\"https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop\" style=\"width: 100%; height: 100%; object-fit: cover;\" />\n<div style=\"position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);\"></div>\n<div style=\"position: absolute; bottom: 16px; left: 16px; right: 16px; color: white;\">\n<h3 style=\"font-weight: 600; font-size: 18px; margin: 0;\">Dr. Carlos Mendes</h3>\n<p style=\"color: rgba(255,255,255,0.8); font-size: 14px; margin: 4px 0 0 0;\">Especialista em Cardiologia</p>\n</div>\n</div>\n<div style=\"padding: 16px; display: flex; gap: 16px; color: #6b7280; font-size: 14px;\">\n<span>📚 12 cursos</span>\n<span>👥 3.890 alunos</span>\n</div>\n</div>",
+                "align": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "instructor-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25
+          },
+          "elements": [
+            {
+              "id": "instructor-3-card",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff;\">\n<div style=\"position: relative; height: 256px; overflow: hidden;\">\n<img src=\"https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop\" style=\"width: 100%; height: 100%; object-fit: cover;\" />\n<div style=\"position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);\"></div>\n<div style=\"position: absolute; bottom: 16px; left: 16px; right: 16px; color: white;\">\n<h3 style=\"font-weight: 600; font-size: 18px; margin: 0;\">Dra. Mariana Costa</h3>\n<p style=\"color: rgba(255,255,255,0.8); font-size: 14px; margin: 4px 0 0 0;\">Especialista em Dermatologia</p>\n</div>\n</div>\n<div style=\"padding: 16px; display: flex; gap: 16px; color: #6b7280; font-size: 14px;\">\n<span>📚 6 cursos</span>\n<span>👥 1.870 alunos</span>\n</div>\n</div>",
+                "align": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "instructor-4-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25
+          },
+          "elements": [
+            {
+              "id": "instructor-4-card",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; background: #fff;\">\n<div style=\"position: relative; height: 256px; overflow: hidden;\">\n<img src=\"https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&h=400&fit=crop\" style=\"width: 100%; height: 100%; object-fit: cover;\" />\n<div style=\"position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);\"></div>\n<div style=\"position: absolute; bottom: 16px; left: 16px; right: 16px; color: white;\">\n<h3 style=\"font-weight: 600; font-size: 18px; margin: 0;\">Dr. Roberto Almeida</h3>\n<p style=\"color: rgba(255,255,255,0.8); font-size: 14px; margin: 4px 0 0 0;\">Especialista em Gestão</p>\n</div>\n</div>\n<div style=\"padding: 16px; display: flex; gap: 16px; color: #6b7280; font-size: 14px;\">\n<span>📚 10 cursos</span>\n<span>👥 4.120 alunos</span>\n</div>\n</div>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "instructors-cta-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "instructors-cta-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "instructors-cta-btn",
+              "elType": "widget",
+              "widgetType": "button",
+              "settings": {
+                "text": "Ver Todos os Professores",
+                "link": {
+                  "url": "/professores",
+                  "is_external": false,
+                  "nofollow": false
+                },
+                "align": "center",
+                "size": "lg",
+                "button_type": "default",
+                "background_color": "transparent",
+                "button_text_color": "#166534",
+                "border_border": "solid",
+                "border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "border_color": "#166534",
+                "border_radius": {
+                  "unit": "px",
+                  "size": 8
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "curriculum-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "curriculum-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "curriculum-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Grade Curricular</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "curriculum-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "O que você vai aprender",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "16",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            },
+            {
+              "id": "curriculum-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 16px; max-width: 600px; margin: 0 auto 40px;\">Grade curricular completa com 360 horas de conteúdo</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "curriculum-content-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "content_width": {
+          "unit": "px",
+          "size": 900
+        },
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "curriculum-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "curriculum-accordion",
+              "elType": "widget",
+              "widgetType": "accordion",
+              "settings": {
+                "tabs": [
+                  {
+                    "tab_title": "Módulo 1: Fundamentos e Base Teórica (60h)",
+                    "tab_content": "<ul style=\"color: #6b7280; margin: 0; padding-left: 20px;\"><li>Introdução à área de especialização</li><li>Conceitos fundamentais e terminologia</li><li>Panorama histórico e tendências atuais</li><li>Metodologia de pesquisa científica</li></ul>"
+                  },
+                  {
+                    "tab_title": "Módulo 2: Competências Técnicas (120h)",
+                    "tab_content": "<ul style=\"color: #6b7280; margin: 0; padding-left: 20px;\"><li>Ferramentas e técnicas avançadas</li><li>Aplicações práticas e estudos de caso</li><li>Análise crítica e resolução de problemas</li><li>Projetos integrados com o mercado</li></ul>"
+                  },
+                  {
+                    "tab_title": "Módulo 3: Gestão e Liderança (80h)",
+                    "tab_content": "<ul style=\"color: #6b7280; margin: 0; padding-left: 20px;\"><li>Gestão estratégica e operacional</li><li>Liderança e desenvolvimento de equipes</li><li>Comunicação corporativa</li><li>Ética profissional e responsabilidade social</li></ul>"
+                  },
+                  {
+                    "tab_title": "Módulo 4: Projeto Final - TCC (100h)",
+                    "tab_content": "<ul style=\"color: #6b7280; margin: 0; padding-left: 20px;\"><li>Definição do tema e objetivos</li><li>Desenvolvimento da pesquisa</li><li>Orientação individualizada</li><li>Apresentação e defesa do trabalho</li></ul>"
+                  }
+                ],
+                "title_color": "#111827",
+                "title_background": "#ffffff",
+                "content_color": "#6b7280",
+                "content_background_color": "#ffffff",
+                "icon_color": "#166534",
+                "icon_active_color": "#166534",
+                "border_color": "#e5e7eb",
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "courses-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "css_classes": "cursos"
+      },
+      "elements": [
+        {
+          "id": "courses-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "courses-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Cursos</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "courses-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Nossos Cursos de Pós-Graduação",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "16",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            },
+            {
+              "id": "courses-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 16px; max-width: 600px; margin: 0 auto 40px;\">Escolha a especialização ideal para sua carreira</p>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "courses-shortcode",
+              "elType": "widget",
+              "widgetType": "shortcode",
+              "settings": {
+                "shortcode": "[elementor-template id=\"course-grid-pos-graduacao\"]"
+              }
+            },
+            {
+              "id": "courses-note",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #9ca3af; font-size: 14px; font-style: italic; margin-top: 24px;\">💡 Substitua o shortcode acima pelo widget \"Course Grid\" do Elementor com filtro por tipo \"pos-graduacao\"</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "testimonials-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "testimonials-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "testimonials-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Depoimentos</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "testimonials-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "O que nossos alunos dizem",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "40",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "testimonials-grid-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "30",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "testimonial-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "testimonial-1",
+              "elType": "widget",
+              "widgetType": "testimonial",
+              "settings": {
+                "testimonial_content": "A pós-graduação superou minhas expectativas. Os professores são excelentes e o conteúdo muito atualizado. Já estou aplicando no meu trabalho!",
+                "testimonial_image": {
+                  "url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+                  "id": ""
+                },
+                "testimonial_name": "Fernanda Oliveira",
+                "testimonial_job": "MBA em Gestão Veterinária",
+                "content_content_color": "#374151",
+                "name_text_color": "#111827",
+                "title_text_color": "#166534",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "testimonial-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "testimonial-2",
+              "elType": "widget",
+              "widgetType": "testimonial",
+              "settings": {
+                "testimonial_content": "Consegui uma promoção após concluir o curso. A metodologia 100% online me permitiu estudar sem abrir mão do trabalho. Recomendo demais!",
+                "testimonial_image": {
+                  "url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+                  "id": ""
+                },
+                "testimonial_name": "Ricardo Santos",
+                "testimonial_job": "Pós em Clínica Médica",
+                "content_content_color": "#374151",
+                "name_text_color": "#111827",
+                "title_text_color": "#166534",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "testimonial-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "testimonial-3",
+              "elType": "widget",
+              "widgetType": "testimonial",
+              "settings": {
+                "testimonial_content": "O suporte da equipe é fantástico! Sempre que precisei de ajuda, fui atendida rapidamente. O investimento valeu cada centavo.",
+                "testimonial_image": {
+                  "url": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+                  "id": ""
+                },
+                "testimonial_name": "Juliana Pereira",
+                "testimonial_job": "Especialização em Cirurgia",
+                "content_content_color": "#374151",
+                "name_text_color": "#111827",
+                "title_text_color": "#166534",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faq-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "faq-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "faq-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Dúvidas</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "faq-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Perguntas Frequentes",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "40",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faq-content-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "content_width": {
+          "unit": "px",
+          "size": 800
+        },
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "faq-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "faq-accordion",
+              "elType": "widget",
+              "widgetType": "accordion",
+              "settings": {
+                "tabs": [
+                  {
+                    "tab_title": "A pós-graduação é reconhecida pelo MEC?",
+                    "tab_content": "Sim! Todos os nossos cursos são devidamente autorizados e reconhecidos pelo Ministério da Educação (MEC). Ao concluir, você recebe um diploma de especialista com validade nacional, aceito em concursos públicos e processos seletivos."
+                  },
+                  {
+                    "tab_title": "Qual a duração dos cursos?",
+                    "tab_content": "Nossos cursos de pós-graduação têm duração de 12 a 18 meses, dependendo da especialização escolhida. A carga horária varia de 360 a 720 horas, incluindo o Trabalho de Conclusão de Curso (TCC)."
+                  },
+                  {
+                    "tab_title": "Como funciona a metodologia online?",
+                    "tab_content": "Nossa metodologia é 100% online e flexível. Você acessa as aulas gravadas quando e onde quiser, através da nossa plataforma de ensino. Além das videoaulas, oferecemos materiais complementares, fóruns de discussão e encontros ao vivo para tirar dúvidas com os professores."
+                  },
+                  {
+                    "tab_title": "Preciso ter graduação para fazer a pós?",
+                    "tab_content": "Sim, é necessário ter concluído um curso de graduação (bacharelado, licenciatura ou tecnólogo) reconhecido pelo MEC. Você precisará apresentar o diploma ou certificado de conclusão no momento da matrícula."
+                  },
+                  {
+                    "tab_title": "Como é feito o TCC?",
+                    "tab_content": "O Trabalho de Conclusão de Curso é desenvolvido ao longo do programa, com orientação individualizada de um professor. Você pode escolher entre artigo científico, estudo de caso ou projeto aplicado. A defesa é realizada online, em data agendada."
+                  },
+                  {
+                    "tab_title": "Quais as formas de pagamento?",
+                    "tab_content": "Oferecemos diversas formas de pagamento: à vista com desconto de 15%, parcelamento em até 18x no cartão de crédito sem juros, ou boleto bancário parcelado. Também aceitamos financiamento estudantil e parcerias com empresas."
+                  }
+                ],
+                "title_color": "#111827",
+                "title_background": "#f9fafb",
+                "content_color": "#6b7280",
+                "content_background_color": "#ffffff",
+                "icon_color": "#166534",
+                "icon_active_color": "#166534",
+                "border_color": "#e5e7eb",
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cta-section",
+      "elType": "section",
+      "settings": {
+        "layout": "full_width",
+        "background_background": "gradient",
+        "background_color": "#166534",
+        "background_color_b": "#15803d",
+        "background_gradient_angle": {
+          "unit": "deg",
+          "size": 135
+        },
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "cta-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "cta-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Pronto para transformar sua carreira?",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#ffffff",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700"
+              }
+            },
+            {
+              "id": "cta-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: rgba(255,255,255,0.9); font-size: 18px; max-width: 600px; margin: 16px auto 32px;\">Comece sua jornada de especialização hoje mesmo. Matrículas abertas com condições especiais.</p>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "cta-buttons",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;\"><a href=\"#cursos\" style=\"background: #ffffff; color: #166534; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; text-decoration: none; display: inline-block;\">Ver Cursos Disponíveis</a><a href=\"https://wa.me/5500000000000\" style=\"background: transparent; color: #ffffff; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; text-decoration: none; display: inline-block; border: 1px solid rgba(255,255,255,0.5);\">Falar com Consultor</a></div>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "page_settings": {
+    "hide_title": "yes",
+    "template": "elementor_header_footer"
+  }
+}

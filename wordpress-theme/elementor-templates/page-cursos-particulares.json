@@ -1,0 +1,1851 @@
+{
+  "version": "0.4",
+  "title": "Cursos Particulares",
+  "type": "page",
+  "content": [
+    {
+      "id": "hero-section",
+      "elType": "section",
+      "settings": {
+        "layout": "full_width",
+        "height": "min-height",
+        "custom_height": {
+          "unit": "vh",
+          "size": 70
+        },
+        "background_background": "gradient",
+        "background_color": "#166534",
+        "background_color_b": "#15803d",
+        "background_gradient_angle": {
+          "unit": "deg",
+          "size": 135
+        },
+        "background_overlay_background": "classic",
+        "background_overlay_image": {
+          "url": "",
+          "id": ""
+        },
+        "background_overlay_opacity": {
+          "unit": "%",
+          "size": 0.2
+        },
+        "content_position": "middle",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "hero-column",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "hero-badges",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"display: flex; gap: 12px; justify-content: center; margin-bottom: 24px;\"><span style=\"background: rgba(255,255,255,0.2); color: white; padding: 8px 16px; border-radius: 9999px; font-size: 14px; backdrop-filter: blur(4px);\">✨ Atendimento 1:1</span><span style=\"background: rgba(255,255,255,0.2); color: white; padding: 8px 16px; border-radius: 9999px; font-size: 14px; backdrop-filter: blur(4px);\">🎯 Online ou Presencial</span></div>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "hero-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Cursos Particulares e <span style=\"color: #86efac;\">Mentorias</span>",
+                "size": "xl",
+                "header_size": "h1",
+                "align": "center",
+                "title_color": "#ffffff",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 48
+                },
+                "typography_font_weight": "700"
+              }
+            },
+            {
+              "id": "hero-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: rgba(255,255,255,0.9); font-size: 18px; max-width: 700px; margin: 24px auto;\">Aprenda diretamente com especialistas renomados em sessões personalizadas, com foco total nas suas necessidades e objetivos profissionais.</p>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "hero-cta",
+              "elType": "widget",
+              "widgetType": "button",
+              "settings": {
+                "text": "Solicitar Mentoria",
+                "link": {
+                  "url": "#formulario",
+                  "is_external": false,
+                  "nofollow": false
+                },
+                "align": "center",
+                "size": "lg",
+                "button_type": "default",
+                "background_color": "#ffffff",
+                "button_text_color": "#166534",
+                "border_radius": {
+                  "unit": "px",
+                  "size": 8
+                },
+                "typography_typography": "custom",
+                "typography_font_weight": "600",
+                "button_padding": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "32",
+                  "bottom": "16",
+                  "left": "32",
+                  "isLinked": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "benefits-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "benefits-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "benefits-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Vantagens</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "benefits-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Por que escolher aulas particulares?",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "16",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            },
+            {
+              "id": "benefits-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 16px; max-width: 600px; margin: 0 auto 40px;\">Descubra as vantagens de um aprendizado focado exclusivamente em você.</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "benefits-grid-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "40",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "benefit-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25
+          },
+          "elements": [
+            {
+              "id": "benefit-1",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-user",
+                  "library": "fa-solid"
+                },
+                "title_text": "Atenção Exclusiva",
+                "description_text": "100% do tempo dedicado a você, suas dúvidas e seus objetivos específicos.",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 40
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "benefit-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25
+          },
+          "elements": [
+            {
+              "id": "benefit-2",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-clock",
+                  "library": "fa-solid"
+                },
+                "title_text": "Horários Flexíveis",
+                "description_text": "Agende suas sessões nos horários que melhor se encaixam na sua rotina.",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 40
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "benefit-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25
+          },
+          "elements": [
+            {
+              "id": "benefit-3",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-bullseye",
+                  "library": "fa-solid"
+                },
+                "title_text": "Foco em Objetivos",
+                "description_text": "Conteúdo direcionado para alcançar suas metas profissionais específicas.",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 40
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "benefit-4-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25
+          },
+          "elements": [
+            {
+              "id": "benefit-4",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-comments",
+                  "library": "fa-solid"
+                },
+                "title_text": "Feedback Imediato",
+                "description_text": "Tire dúvidas em tempo real e receba orientações personalizadas.",
+                "position": "top",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 40
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "modalities-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "modalities-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "modalities-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Modalidades</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "modalities-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Tipos de Acompanhamento",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "16",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            },
+            {
+              "id": "modalities-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 16px; max-width: 600px; margin: 0 auto 40px;\">Escolha a modalidade que melhor se adapta às suas necessidades.</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "modalities-grid-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "20",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "modality-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 50
+          },
+          "elements": [
+            {
+              "id": "modality-1",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-video",
+                  "library": "fa-solid"
+                },
+                "title_text": "Mentoria Online",
+                "description_text": "Sessões individuais por videochamada com compartilhamento de tela e casos clínicos.\n\n<strong style=\"color: #166534;\">A partir de R$ 350/sessão</strong>\n<span style=\"color: #9ca3af; font-size: 12px;\">1h por sessão</span>",
+                "position": "left",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 32
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#f9fafb",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        },
+        {
+          "id": "modality-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 50
+          },
+          "elements": [
+            {
+              "id": "modality-2",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-stethoscope",
+                  "library": "fa-solid"
+                },
+                "title_text": "Acompanhamento Prático",
+                "description_text": "Acompanhe procedimentos e atendimentos presenciais com o especialista.\n\n<strong style=\"color: #166534;\">Sob consulta</strong>\n<span style=\"color: #9ca3af; font-size: 12px;\">Sob demanda</span>",
+                "position": "left",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 32
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#f9fafb",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "modalities-grid-section-2",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "20",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "modality-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 50
+          },
+          "elements": [
+            {
+              "id": "modality-3",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-file-medical",
+                  "library": "fa-solid"
+                },
+                "title_text": "Consultoria de Casos",
+                "description_text": "Análise detalhada de casos clínicos complexos com orientação especializada.\n\n<strong style=\"color: #166534;\">A partir de R$ 500</strong>\n<span style=\"color: #9ca3af; font-size: 12px;\">Por caso</span>",
+                "position": "left",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 32
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#f9fafb",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        },
+        {
+          "id": "modality-4-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 50
+          },
+          "elements": [
+            {
+              "id": "modality-4",
+              "elType": "widget",
+              "widgetType": "icon-box",
+              "settings": {
+                "selected_icon": {
+                  "value": "fas fa-question-circle",
+                  "library": "fa-solid"
+                },
+                "title_text": "Plantão de Dúvidas",
+                "description_text": "Acesso direto ao mentor via WhatsApp para dúvidas rápidas do dia a dia.\n\n<strong style=\"color: #166534;\">R$ 800/mês</strong>\n<span style=\"color: #9ca3af; font-size: 12px;\">Mensal</span>",
+                "position": "left",
+                "title_color": "#111827",
+                "primary_color": "#166534",
+                "icon_size": {
+                  "unit": "px",
+                  "size": 32
+                },
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "description_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#f9fafb",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_border_border": "solid",
+                "_border_width": {
+                  "unit": "px",
+                  "top": "1",
+                  "right": "1",
+                  "bottom": "1",
+                  "left": "1",
+                  "isLinked": true
+                },
+                "_border_color": "#e5e7eb"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "how-it-works-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "how-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "how-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Processo</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "how-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Como Funciona",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "40",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "how-grid-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "40",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "step-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "step-1-number",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"width: 48px; height: 48px; background: linear-gradient(135deg, #166534, #15803d); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; margin: 0 auto 16px;\">1</div>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "step-1-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Preencha o Formulário",
+                "size": "small",
+                "header_size": "h4",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_weight": "600"
+              }
+            },
+            {
+              "id": "step-1-desc",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 14px;\">Conte-nos sobre seus objetivos e área de interesse.</p>",
+                "align": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "step-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "step-2-number",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"width: 48px; height: 48px; background: linear-gradient(135deg, #166534, #15803d); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; margin: 0 auto 16px;\">2</div>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "step-2-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Receba Contato",
+                "size": "small",
+                "header_size": "h4",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_weight": "600"
+              }
+            },
+            {
+              "id": "step-2-desc",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 14px;\">Nossa equipe entrará em contato em até 24h.</p>",
+                "align": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "step-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "step-3-number",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"width: 48px; height: 48px; background: linear-gradient(135deg, #166534, #15803d); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; margin: 0 auto 16px;\">3</div>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "step-3-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Agende uma Conversa",
+                "size": "small",
+                "header_size": "h4",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_weight": "600"
+              }
+            },
+            {
+              "id": "step-3-desc",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 14px;\">Converse com o mentor para alinhar expectativas.</p>",
+                "align": "center"
+              }
+            }
+          ]
+        },
+        {
+          "id": "step-4-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "step-4-number",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<div style=\"width: 48px; height: 48px; background: linear-gradient(135deg, #166534, #15803d); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; margin: 0 auto 16px;\">4</div>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "step-4-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Inicie sua Mentoria",
+                "size": "small",
+                "header_size": "h4",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_weight": "600"
+              }
+            },
+            {
+              "id": "step-4-desc",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 14px;\">Comece seu desenvolvimento profissional personalizado.</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mentors-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "mentors-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "mentors-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Especialistas</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "mentors-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Nossos Mentores",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "16",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            },
+            {
+              "id": "mentors-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 16px; max-width: 600px; margin: 0 auto 40px;\">Profissionais com vasta experiência prática e acadêmica.</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mentors-grid-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "30",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "mentor-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "mentor-1-card",
+              "elType": "widget",
+              "widgetType": "image-box",
+              "settings": {
+                "image": {
+                  "url": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop",
+                  "id": ""
+                },
+                "title_text": "Dra. Ana Paula Silva",
+                "description_text": "Especialista em Ultrassonografia Veterinária\n\n<span style=\"color: #166534;\">15 anos de experiência</span>",
+                "position": "top",
+                "title_color": "#111827",
+                "description_color": "#6b7280",
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "0",
+                  "right": "0",
+                  "bottom": "24",
+                  "left": "0",
+                  "isLinked": false
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                },
+                "image_border_radius": {
+                  "unit": "px",
+                  "top": "12",
+                  "right": "12",
+                  "bottom": "0",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "mentor-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "mentor-2-card",
+              "elType": "widget",
+              "widgetType": "image-box",
+              "settings": {
+                "image": {
+                  "url": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop",
+                  "id": ""
+                },
+                "title_text": "Dr. Carlos Mendes",
+                "description_text": "Especialista em Cardiologia Veterinária\n\n<span style=\"color: #166534;\">20 anos de experiência</span>",
+                "position": "top",
+                "title_color": "#111827",
+                "description_color": "#6b7280",
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "0",
+                  "right": "0",
+                  "bottom": "24",
+                  "left": "0",
+                  "isLinked": false
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                },
+                "image_border_radius": {
+                  "unit": "px",
+                  "top": "12",
+                  "right": "12",
+                  "bottom": "0",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "mentor-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "mentor-3-card",
+              "elType": "widget",
+              "widgetType": "image-box",
+              "settings": {
+                "image": {
+                  "url": "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop",
+                  "id": ""
+                },
+                "title_text": "Dra. Mariana Costa",
+                "description_text": "Especialista em Dermatologia Veterinária\n\n<span style=\"color: #166534;\">12 anos de experiência</span>",
+                "position": "top",
+                "title_color": "#111827",
+                "description_color": "#6b7280",
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "0",
+                  "right": "0",
+                  "bottom": "24",
+                  "left": "0",
+                  "isLinked": false
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                },
+                "image_border_radius": {
+                  "unit": "px",
+                  "top": "12",
+                  "right": "12",
+                  "bottom": "0",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "testimonials-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "testimonials-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "testimonials-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Depoimentos</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "testimonials-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "O que dizem nossos mentorados",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "40",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "testimonials-grid-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "structure": "30",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "gap": "extended"
+      },
+      "elements": [
+        {
+          "id": "testimonial-1-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "testimonial-1",
+              "elType": "widget",
+              "widgetType": "testimonial",
+              "settings": {
+                "testimonial_content": "A mentoria com a Dra. Ana Paula transformou minha prática clínica. Em apenas 3 meses, minha confiança em ultrassonografia aumentou significativamente.",
+                "testimonial_image": {
+                  "url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+                  "id": ""
+                },
+                "testimonial_name": "Fernanda Oliveira",
+                "testimonial_job": "Veterinária - SP",
+                "content_content_color": "#374151",
+                "name_text_color": "#111827",
+                "title_text_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "testimonial-2-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "testimonial-2",
+              "elType": "widget",
+              "widgetType": "testimonial",
+              "settings": {
+                "testimonial_content": "O acompanhamento de casos com o Dr. Carlos foi fundamental para minha especialização. Aprendi técnicas que não encontraria em nenhum curso tradicional.",
+                "testimonial_image": {
+                  "url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+                  "id": ""
+                },
+                "testimonial_name": "Ricardo Santos",
+                "testimonial_job": "Veterinário - RJ",
+                "content_content_color": "#374151",
+                "name_text_color": "#111827",
+                "title_text_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": "testimonial-3-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "testimonial-3",
+              "elType": "widget",
+              "widgetType": "testimonial",
+              "settings": {
+                "testimonial_content": "As sessões de mentoria me deram a segurança que eu precisava para atender casos mais complexos. Investimento que se pagou no primeiro mês.",
+                "testimonial_image": {
+                  "url": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+                  "id": ""
+                },
+                "testimonial_name": "Juliana Pereira",
+                "testimonial_job": "Veterinária - MG",
+                "content_content_color": "#374151",
+                "name_text_color": "#111827",
+                "title_text_color": "#6b7280",
+                "_background_background": "classic",
+                "_background_color": "#ffffff",
+                "_border_radius": {
+                  "unit": "px",
+                  "size": 12
+                },
+                "_padding": {
+                  "unit": "px",
+                  "top": "24",
+                  "right": "24",
+                  "bottom": "24",
+                  "left": "24",
+                  "isLinked": true
+                },
+                "_box_shadow_box_shadow_type": "yes",
+                "_box_shadow_box_shadow": {
+                  "horizontal": 0,
+                  "vertical": 4,
+                  "blur": 6,
+                  "spread": -1,
+                  "color": "rgba(0,0,0,0.1)"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "form-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        },
+        "css_classes": "formulario"
+      },
+      "elements": [
+        {
+          "id": "form-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "form-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Contato</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "form-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Solicite sua Mentoria",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "16",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            },
+            {
+              "id": "form-subtitle",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<p style=\"color: #6b7280; font-size: 16px; max-width: 600px; margin: 0 auto 40px;\">Preencha o formulário abaixo e entraremos em contato em até 24 horas.</p>",
+                "align": "center"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "form-content-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "content_width": {
+          "unit": "px",
+          "size": 800
+        },
+        "background_background": "classic",
+        "background_color": "#ffffff",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "form-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "contact-form",
+              "elType": "widget",
+              "widgetType": "form",
+              "settings": {
+                "form_name": "Solicitação de Mentoria",
+                "form_fields": [
+                  {
+                    "custom_id": "nome",
+                    "field_type": "text",
+                    "field_label": "Nome completo",
+                    "placeholder": "Seu nome completo",
+                    "required": "true",
+                    "width": "50"
+                  },
+                  {
+                    "custom_id": "email",
+                    "field_type": "email",
+                    "field_label": "E-mail",
+                    "placeholder": "seu@email.com",
+                    "required": "true",
+                    "width": "50"
+                  },
+                  {
+                    "custom_id": "telefone",
+                    "field_type": "tel",
+                    "field_label": "Telefone/WhatsApp",
+                    "placeholder": "(00) 00000-0000",
+                    "required": "true",
+                    "width": "50"
+                  },
+                  {
+                    "custom_id": "especialidade",
+                    "field_type": "select",
+                    "field_label": "Especialidade de interesse",
+                    "field_options": "Ultrassonografia Veterinária\nCardiologia Veterinária\nDermatologia Veterinária\nOdontologia Veterinária\nNutrição Clínica\nClínica Médica de Pequenos Animais\nOutra",
+                    "required": "true",
+                    "width": "50"
+                  },
+                  {
+                    "custom_id": "modalidade",
+                    "field_type": "select",
+                    "field_label": "Modalidade preferida",
+                    "field_options": "Mentoria Online\nAcompanhamento Prático\nConsultoria de Casos\nPlantão de Dúvidas",
+                    "required": "true",
+                    "width": "50"
+                  },
+                  {
+                    "custom_id": "experiencia",
+                    "field_type": "select",
+                    "field_label": "Nível de experiência",
+                    "field_options": "Recém-formado (0-2 anos)\nJunior (2-5 anos)\nPleno (5-10 anos)\nSenior (10+ anos)",
+                    "required": "true",
+                    "width": "50"
+                  },
+                  {
+                    "custom_id": "mensagem",
+                    "field_type": "textarea",
+                    "field_label": "Mensagem",
+                    "placeholder": "Conte-nos sobre seus objetivos com a mentoria...",
+                    "required": "false",
+                    "width": "100",
+                    "rows": "4"
+                  }
+                ],
+                "button_text": "Enviar Solicitação",
+                "button_size": "md",
+                "button_width": "100",
+                "button_align": "stretch",
+                "button_background_color": "#166534",
+                "button_text_color": "#ffffff",
+                "button_border_radius": {
+                  "unit": "px",
+                  "size": 8
+                },
+                "email_to": "contato@vetcursos.com.br",
+                "email_subject": "Nova Solicitação de Mentoria - VetCursos",
+                "success_message": "Obrigado! Entraremos em contato em breve.",
+                "field_label_color": "#374151",
+                "field_background_color": "#f9fafb",
+                "field_border_color": "#e5e7eb",
+                "field_border_radius": {
+                  "unit": "px",
+                  "size": 8
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faq-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "80",
+          "right": "20",
+          "bottom": "40",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "faq-header-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100,
+            "align": "center"
+          },
+          "elements": [
+            {
+              "id": "faq-badge",
+              "elType": "widget",
+              "widgetType": "text-editor",
+              "settings": {
+                "editor": "<span style=\"background: #dcfce7; color: #166534; padding: 6px 16px; border-radius: 9999px; font-size: 14px; font-weight: 500;\">Dúvidas</span>",
+                "align": "center"
+              }
+            },
+            {
+              "id": "faq-title",
+              "elType": "widget",
+              "widgetType": "heading",
+              "settings": {
+                "title": "Perguntas Frequentes",
+                "size": "large",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#111827",
+                "typography_typography": "custom",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 36
+                },
+                "typography_font_weight": "700",
+                "_margin": {
+                  "unit": "px",
+                  "top": "16",
+                  "right": "0",
+                  "bottom": "40",
+                  "left": "0",
+                  "isLinked": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faq-content-section",
+      "elType": "section",
+      "settings": {
+        "layout": "boxed",
+        "content_width": {
+          "unit": "px",
+          "size": 800
+        },
+        "background_background": "classic",
+        "background_color": "#f0fdf4",
+        "padding": {
+          "unit": "px",
+          "top": "0",
+          "right": "20",
+          "bottom": "80",
+          "left": "20",
+          "isLinked": false
+        }
+      },
+      "elements": [
+        {
+          "id": "faq-col",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "faq-accordion",
+              "elType": "widget",
+              "widgetType": "accordion",
+              "settings": {
+                "tabs": [
+                  {
+                    "tab_title": "Como funcionam as sessões de mentoria?",
+                    "tab_content": "As sessões são realizadas por videochamada (Zoom ou Google Meet) com duração de 1 hora. Durante a sessão, você pode compartilhar casos clínicos, tirar dúvidas em tempo real e receber orientações personalizadas do mentor. Todas as sessões são agendadas previamente conforme disponibilidade do mentor e do aluno."
+                  },
+                  {
+                    "tab_title": "Qual o investimento para uma mentoria?",
+                    "tab_content": "Os valores variam conforme a modalidade escolhida: Mentoria Online a partir de R$ 350/sessão, Consultoria de Casos a partir de R$ 500/caso, e Plantão de Dúvidas R$ 800/mês. Para acompanhamento prático presencial, os valores são sob consulta. Oferecemos pacotes com descontos para quem deseja um acompanhamento contínuo."
+                  },
+                  {
+                    "tab_title": "Posso cancelar ou reagendar uma sessão?",
+                    "tab_content": "Sim! Você pode reagendar sua sessão com até 24 horas de antecedência sem custo adicional. Cancelamentos com menos de 24 horas de antecedência estão sujeitos a cobrança de 50% do valor da sessão. Em casos de emergência, analisamos cada situação individualmente."
+                  },
+                  {
+                    "tab_title": "As sessões são gravadas?",
+                    "tab_content": "Sim, mediante autorização, as sessões podem ser gravadas e disponibilizadas para você revisar posteriormente. As gravações ficam disponíveis por 30 dias após a sessão. Isso é especialmente útil para revisar discussões de casos clínicos e orientações técnicas."
+                  },
+                  {
+                    "tab_title": "Existe pacote de sessões?",
+                    "tab_content": "Sim! Oferecemos pacotes com descontos progressivos: 4 sessões (10% de desconto), 8 sessões (15% de desconto) e 12 sessões (20% de desconto). Os pacotes podem ser utilizados ao longo de 6 meses. Entre em contato para conhecer as condições especiais."
+                  }
+                ],
+                "title_color": "#111827",
+                "title_background": "#ffffff",
+                "content_color": "#6b7280",
+                "content_background_color": "#ffffff",
+                "icon_color": "#166534",
+                "icon_active_color": "#166534",
+                "border_color": "#e5e7eb",
+                "title_typography_typography": "custom",
+                "title_typography_font_weight": "600"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "page_settings": {
+    "hide_title": "yes",
+    "template": "elementor_header_footer"
+  }
+}
