@@ -199,6 +199,18 @@ if (!$has_reservations && !empty($checkout_items) && $timer_ativo) {
 $asaas_active = cursos_asaas()->is_active();
 $pagseguro_active = cursos_pagseguro()->is_active();
 
+// Chave pública do PagBank usada exclusivamente no navegador para criptografar o cartão.
+$pagseguro_public_key = '';
+$pagseguro_public_key_error = '';
+if ($pagseguro_active) {
+    $pagseguro_key_result = cursos_pagseguro()->get_public_key();
+    if (!empty($pagseguro_key_result['success']) && !empty($pagseguro_key_result['public_key'])) {
+        $pagseguro_public_key = $pagseguro_key_result['public_key'];
+    } else {
+        $pagseguro_public_key_error = $pagseguro_key_result['error'] ?? 'Não foi possível obter a chave pública do PagBank.';
+    }
+}
+
 // Configuração de descontos
 $descontos = cursos_descontos();
 $discount_info = $descontos->get_discount_info();
@@ -389,6 +401,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout_submit'])) {
         // Validar termos obrigatórios
         if ($terms_required && empty($_POST['accept_terms'])) {
             $errors[] = 'Você precisa aceitar os termos para continuar.';
+        }
+
+        // PagBank: o backend aceita somente o cartão criptografado pelo SDK oficial.
+        if ($payment_method === 'credit_card' && $payment_gateway === 'pagseguro') {
+            $encrypted_card_post = isset($_POST['pagseguro_encrypted_card'])
+                ? sanitize_text_field(wp_unslash($_POST['pagseguro_encrypted_card']))
+                : '';
+
+            if ($encrypted_card_post === '') {
+                $errors[] = 'Não foi possível criptografar os dados do cartão. Atualize a página e tente novamente.';
+            }
         }
         
         // Revalidar cupom se foi aplicado
@@ -751,18 +774,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout_submit'])) {
                         $payment_result = $pagseguro->create_pix_payment($customer_data, $amount, $description, $order_id);
                         break;
                     case 'credit_card':
-                        $card_expiry = sanitize_text_field($_POST['card_expiry']);
-                        $expiry_parts = explode('/', $card_expiry);
-                        $card_month = isset($expiry_parts[0]) ? str_pad(preg_replace('/\D/', '', $expiry_parts[0]), 2, '0', STR_PAD_LEFT) : '';
-                        $card_year_raw = isset($expiry_parts[1]) ? preg_replace('/\D/', '', $expiry_parts[1]) : '';
-                        $card_year = strlen($card_year_raw) === 2 ? '20' . $card_year_raw : $card_year_raw;
-                        
                         $card_data = array(
-                            'holder_name' => sanitize_text_field($_POST['card_holder']),
-                            'number' => preg_replace('/\D/', '', sanitize_text_field($_POST['card_number'])),
-                            'exp_month' => $card_month,
-                            'exp_year' => $card_year,
-                            'cvv' => sanitize_text_field($_POST['card_cvv']),
+                            'holder_name' => sanitize_text_field($_POST['card_holder'] ?? ''),
+                            'holder_tax_id' => preg_replace('/\D/', '', $cpf),
+                            'encrypted' => isset($_POST['pagseguro_encrypted_card'])
+                                ? sanitize_text_field(wp_unslash($_POST['pagseguro_encrypted_card']))
+                                : '',
                         );
                         $installments = intval($_POST['installments']) ?: 1;
                         $payment_result = $pagseguro->create_credit_card_payment($customer_data, $amount, $description, $order_id, $card_data, $installments);
@@ -2228,6 +2245,7 @@ get_header();
 
                 <!-- Gateway escondido -->
                 <input type="hidden" name="payment_gateway" value="<?php echo esc_attr($payment_gateway); ?>">
+                <input type="hidden" name="pagseguro_encrypted_card" id="pagseguro_encrypted_card" value="">
                 
                 <div class="checkout-grid">
                     <!-- Coluna 1: Formulário ou Resumo -->
@@ -3145,8 +3163,15 @@ get_header();
     </section>
 </div>
 
+<?php if ($pagseguro_active): ?>
+<script src="https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js"></script>
+<?php endif; ?>
+
 <script>
 var originalPrice = <?php echo floatval($subtotal); ?>;
+var checkoutPaymentGateway = <?php echo wp_json_encode($payment_gateway); ?>;
+var pagseguroPublicKey = <?php echo wp_json_encode($pagseguro_public_key); ?>;
+var pagseguroPublicKeyError = <?php echo wp_json_encode($pagseguro_public_key_error); ?>;
 var courseDiscountTotal = 0;
 var eligibleSubtotal = <?php echo floatval($subtotal); ?>;
 var couponDiscount = 0;
@@ -3957,6 +3982,81 @@ document.addEventListener('DOMContentLoaded', function() {
                     cepInput.focus();
                     return false;
                 }
+            }
+        });
+
+        // PagBank: criptografar localmente antes do navegador serializar o formulário.
+        // Número, validade e CVV são desabilitados após a criptografia para não serem enviados ao PHP.
+        checkoutForm.addEventListener('submit', function(e) {
+            if (e.defaultPrevented) return;
+
+            var selectedMethod = document.querySelector('input[name="payment_method"]:checked');
+            var method = currentPaymentMethod || (selectedMethod ? selectedMethod.value : '');
+
+            var _cfg = window.CURSOS_ALT_CONFIG;
+            var _mod = isStudent ? 'student' : 'prof';
+            var _altActive = !!(_cfg && _cfg[_mod] && _cfg[_mod][method]);
+
+            if (_altActive || checkoutPaymentGateway !== 'pagseguro' || method !== 'credit_card') {
+                return;
+            }
+
+            if (!pagseguroPublicKey) {
+                e.preventDefault();
+                alert(pagseguroPublicKeyError || 'Não foi possível obter a chave pública do PagBank. Atualize a página e tente novamente.');
+                return false;
+            }
+
+            if (typeof window.PagSeguro === 'undefined' || typeof window.PagSeguro.encryptCard !== 'function') {
+                e.preventDefault();
+                alert('Não foi possível carregar a criptografia segura do PagBank. Atualize a página e tente novamente.');
+                return false;
+            }
+
+            var numberField = document.getElementById('card_number');
+            var holderField = document.getElementById('card_holder');
+            var expiryField = document.getElementById('card_expiry');
+            var cvvField = document.getElementById('card_cvv');
+            var encryptedField = document.getElementById('pagseguro_encrypted_card');
+
+            var expiry = expiryField ? expiryField.value.trim().split('/') : [];
+            var expMonth = expiry[0] || '';
+            var expYear = expiry[1] || '';
+            if (expYear.length === 2) expYear = '20' + expYear;
+
+            try {
+                var encryptedResult = window.PagSeguro.encryptCard({
+                    publicKey: pagseguroPublicKey,
+                    holder: holderField ? holderField.value.trim() : '',
+                    number: numberField ? numberField.value.replace(/\D/g, '') : '',
+                    expMonth: expMonth,
+                    expYear: expYear,
+                    securityCode: cvvField ? cvvField.value.replace(/\D/g, '') : ''
+                });
+
+                if (!encryptedResult || encryptedResult.hasErrors || !encryptedResult.encryptedCard) {
+                    e.preventDefault();
+                    var detail = '';
+                    if (encryptedResult && Array.isArray(encryptedResult.errors) && encryptedResult.errors.length) {
+                        detail = encryptedResult.errors.map(function(err) {
+                            return err.message || err.code || '';
+                        }).filter(Boolean).join('\n');
+                    }
+                    alert('Não foi possível criptografar os dados do cartão.' + (detail ? '\n' + detail : ' Verifique os dados e tente novamente.'));
+                    return false;
+                }
+
+                encryptedField.value = encryptedResult.encryptedCard;
+
+                // Esses campos já estão encapsulados em encryptedCard e não devem chegar ao servidor.
+                if (numberField) numberField.disabled = true;
+                if (expiryField) expiryField.disabled = true;
+                if (cvvField) cvvField.disabled = true;
+            } catch (err) {
+                e.preventDefault();
+                console.error('PagBank card encryption error:', err);
+                alert('Não foi possível criptografar os dados do cartão. Atualize a página e tente novamente.');
+                return false;
             }
         });
     }
