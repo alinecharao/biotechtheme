@@ -176,7 +176,9 @@ class BIS_Sheets_API {
         $decoded = json_decode(wp_remote_retrieve_body($response), true);
         if ($code < 200 || $code >= 300) {
             $message = isset($decoded['error']['message']) ? $decoded['error']['message'] : 'Falha ao acessar o Google Sheets.';
-            return new WP_Error('bis_google_' . $code, $message, array('status' => $code));
+            // As cotas do Sheets podem retornar 429 ou 403 com "Quota exceeded".
+            $is_quota = $code === 429 || ($code === 403 && stripos($message, 'quota exceeded') !== false);
+            return new WP_Error($is_quota ? 'bis_rate_limited' : 'bis_google_' . $code, $message, array('status' => $code));
         }
         return is_array($decoded) ? $decoded : array();
     }
