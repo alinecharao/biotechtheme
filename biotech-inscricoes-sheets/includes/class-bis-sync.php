@@ -15,6 +15,7 @@ class BIS_Sync {
         add_action('cursos_payment_status_changed', array($this, 'on_status_event'), 30, 3);
         add_action('cursos_order_created', array($this, 'on_order_event'), 30, 2);
         add_action('bis_reconcile_event', array($this, 'reconcile'));
+        add_action('bis_reconcile_queue_tick', array($this, 'process_reconcile_queue'));
     }
 
     public function on_order_event($order_id) { $this->sync_related_orders(absint($order_id)); }
@@ -120,7 +121,132 @@ class BIS_Sync {
         return true;
     }
 
+    /**
+     * A reconciliação completa é processada em segundo plano, em pequenos
+     * lotes. Nunca enviar centenas de gravações na mesma requisição PHP.
+     */
+    private function start_reconcile_queue() {
+        $current = get_option('bis_reconcile_queue', array());
+        if (is_array($current) && ($current['status'] ?? '') === 'running') {
+            return new WP_Error('bis_queue_running', 'Já existe uma reconciliação completa em andamento. Consulte o progresso na página.');
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'cursos_orders';
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table) {
+            return new WP_Error('bis_orders_table_missing', 'A tabela de pedidos não foi encontrada.');
+        }
+        $placeholders = implode(',', array_fill(0, count(self::CONFIRMED), '%s'));
+        $ids = array_map('intval', $wpdb->get_col($wpdb->prepare(
+            "SELECT id FROM {$table} WHERE status IN ({$placeholders}) ORDER BY id ASC",
+            self::CONFIRMED
+        )));
+        $tabs = array_map('intval', $wpdb->get_col(
+            "SELECT id FROM {$wpdb->prefix}bis_sheet_tabs ORDER BY id ASC"
+        ));
+        $state = array(
+            'status' => 'running', 'ids' => $ids, 'position' => 0,
+            'tabs' => $tabs, 'tab_position' => 0, 'sorts' => array(),
+            'synced' => 0, 'ignored' => 0, 'errors' => 0,
+            'blank_repaired' => 0, 'started_at' => time(),
+        );
+        update_option('bis_reconcile_queue', $state, false);
+        if (!wp_next_scheduled('bis_reconcile_queue_tick')) {
+            wp_schedule_single_event(time() + 10, 'bis_reconcile_queue_tick');
+        }
+        return array('queued' => true, 'checked' => count($ids));
+    }
+
+    public function process_reconcile_queue() {
+        if (!$this->acquire_lock()) {
+            $this->schedule_queue_tick();
+            return;
+        }
+        $state = get_option('bis_reconcile_queue', array());
+        if (!is_array($state) || ($state['status'] ?? '') !== 'running') {
+            $this->release_lock();
+            return;
+        }
+
+        // No máximo 5 pedidos por execução. As gravações são adicionalmente
+        // protegidas pelo orçamento global na classe BIS_Sheets_API.
+        $this->batch_mode = true;
+        $this->order_index_cache = array();
+        $this->deferred_sorts = array();
+        $processed = 0;
+        while ($processed < 5 && $state['position'] < count($state['ids'])) {
+            $id = absint($state['ids'][$state['position']]);
+            $result = $this->sync_order($id);
+            if (is_wp_error($result) && $result->get_error_code() === 'bis_rate_limited') break;
+            $state['position']++;
+            $processed++;
+            if (is_wp_error($result)) $state['errors']++;
+            elseif ($result === 'ignored') $state['ignored']++;
+            else $state['synced']++;
+        }
+        foreach ($this->deferred_sorts as $key => $sort) $state['sorts'][$key] = $sort;
+        $this->batch_mode = false;
+        $this->order_index_cache = array();
+        $this->deferred_sorts = array();
+
+        // Uma vez concluídos os pedidos, reparar até duas guias sem cabeçalho por ciclo.
+        if ($state['position'] >= count($state['ids'])) {
+            $repaired = 0;
+            while ($repaired < 2 && $state['tab_position'] < count($state['tabs'])) {
+                $tab_id = absint($state['tabs'][$state['tab_position']]);
+                $repair = $this->repair_blank_tabs($tab_id);
+                if (!empty($repair['paused'])) break;
+                $state['tab_position']++;
+                $repaired++;
+                $state['blank_repaired'] += $repair['repaired'];
+                $state['errors'] += $repair['errors'];
+            }
+        }
+
+        // As ordenações são agendadas por guia e distribuídas entre execuções.
+        if ($state['position'] >= count($state['ids'])
+            && $state['tab_position'] >= count($state['tabs'])) {
+            $sorted = 0;
+            foreach ($state['sorts'] as $key => $sort) {
+                if ($sorted >= 3) break;
+                $result = $this->api->sort_tab($sort['spreadsheet_id'], $sort['sheet_id']);
+                if (is_wp_error($result) && $result->get_error_code() === 'bis_rate_limited') break;
+                if (is_wp_error($result)) {
+                    $state['errors']++;
+                    $this->record_error($result, 0, $sort['course_id']);
+                }
+                unset($state['sorts'][$key]);
+                $sorted++;
+            }
+        }
+        if ($state['position'] >= count($state['ids'])
+            && $state['tab_position'] >= count($state['tabs'])
+            && empty($state['sorts'])) {
+            $state['status'] = 'completed';
+            $state['completed_at'] = time();
+            $state['ids'] = array();
+            $state['tabs'] = array();
+            $this->log('completed', 'Reconciliação completa concluída: ' . $state['synced']
+                . ' inscrições sincronizadas, ' . $state['blank_repaired']
+                . ' cabeçalhos recuperados e ' . $state['errors'] . ' erros.');
+        }
+
+        update_option('bis_reconcile_queue', $state, false);
+        $this->release_lock();
+        if ($state['status'] === 'running') $this->schedule_queue_tick();
+    }
+
+    private function schedule_queue_tick() {
+        if (!wp_next_scheduled('bis_reconcile_queue_tick')) {
+            wp_schedule_single_event(time() + 75, 'bis_reconcile_queue_tick');
+        }
+    }
+
     public function reconcile($manual = false) {
+        if ($manual) return $this->start_reconcile_queue();
+        $queue = get_option('bis_reconcile_queue', array());
+        if (is_array($queue) && ($queue['status'] ?? '') === 'running') {
+            return array('checked' => 0, 'synced' => 0, 'ignored' => 0, 'errors' => 0, 'renamed' => 0, 'blank_removed' => 0, 'blank_repaired' => 0);
+        }
         if (!$this->acquire_lock()) return new WP_Error('bis_sync_locked', 'Já existe uma sincronização em andamento. Aguarde alguns minutos e tente novamente.');
         global $wpdb;
         $orders = $wpdb->prefix . 'cursos_orders';
@@ -292,10 +418,12 @@ class BIS_Sync {
         return $this->find_tab($course_id, $class_id);
     }
 
-    private function repair_blank_tabs() {
+    private function repair_blank_tabs($only_tab_id = 0) {
         global $wpdb;
-        $tabs = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs ORDER BY spreadsheet_id ASC, id ASC");
-        $result = array('repaired' => 0, 'errors' => 0);
+        $tabs = $only_tab_id
+            ? $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs WHERE id = %d", $only_tab_id))
+            : $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs ORDER BY spreadsheet_id ASC, id ASC");
+        $result = array('repaired' => 0, 'errors' => 0, 'paused' => false);
 
         foreach ((array) $tabs as $tab) {
             $has_values = $this->api->tab_has_values($tab->spreadsheet_id, $tab->sheet_title);
@@ -316,6 +444,10 @@ class BIS_Sync {
                 $this->class_date($class)
             );
             if (is_wp_error($setup)) {
+                if ($setup->get_error_code() === 'bis_rate_limited') {
+                    $result['paused'] = true;
+                    break;
+                }
                 $result['errors']++;
                 $this->record_error($setup, 0, absint($tab->course_id));
                 continue;
