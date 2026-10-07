@@ -96,6 +96,14 @@ class BIS_Sheets_API {
         )));
     }
 
+    public function tab_has_any_values($spreadsheet_id, $title) {
+        // Inspecionar toda a faixa, inclusive inscrições abaixo do cabeçalho,
+        // antes de considerar uma guia órfã como vazia.
+        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A:M')));
+        if (is_wp_error($result)) return $result;
+        return !empty($result['values']);
+    }
+
     public function tab_has_values($spreadsheet_id, $title) {
         $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A1:M5')));
         if (is_wp_error($result)) return $result;
