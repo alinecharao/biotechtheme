@@ -156,6 +156,16 @@ class BIS_Sheets_API {
     }
 
     private function request($method, $path, $body = null) {
+        // Reserva conservadora: até 30 gravações por minuto em todo o plugin.
+        // O limite real é compartilhado com outras integrações do mesmo usuário/projeto.
+        if (strtoupper($method) !== 'GET') {
+            $bucket = 'bis_write_budget_' . floor(time() / 60);
+            $used = absint(get_transient($bucket));
+            if ($used >= 30) {
+                return new WP_Error('bis_rate_limited', 'Limite preventivo de gravações por minuto. O lote continuará automaticamente.');
+            }
+            set_transient($bucket, $used + 1, 2 * MINUTE_IN_SECONDS);
+        }
         $token = $this->auth->access_token();
         if (is_wp_error($token)) return $token;
         $args = array('method' => $method, 'timeout' => 30, 'headers' => array('Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json'));
