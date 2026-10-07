@@ -69,6 +69,11 @@ final class BIS_Plugin {
         $this->auth = new BIS_Google_Auth();
         $this->api = new BIS_Sheets_API($this->auth);
         $this->sync = new BIS_Sync($this->api);
+        $pending = get_option('bis_reconcile_queue', array());
+        if (is_array($pending) && ($pending['status'] ?? '') === 'running'
+            && !wp_next_scheduled('bis_reconcile_queue_tick')) {
+            wp_schedule_single_event(time() + 30, 'bis_reconcile_queue_tick');
+        }
         if (is_admin()) new BIS_Admin($this->auth, $this->sync);
         add_filter('cron_schedules', array(__CLASS__, 'cron_schedules'));
     }
