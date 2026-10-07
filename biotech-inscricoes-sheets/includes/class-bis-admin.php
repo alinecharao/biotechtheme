@@ -108,11 +108,12 @@ class BIS_Admin {
             delete_transient('bis_sync_result_' . get_current_user_id());
             $result = is_array($result) ? $result : array();
             $messages[$notice] = sprintf(
-                '%d pedidos verificados: %d sincronizados, %d ignorados, %d guias renomeadas e %d com erro.',
+                '%d pedidos verificados: %d sincronizados, %d ignorados, %d guias renomeadas, %d guias vazias removidas e %d com erro.',
                 absint($result['checked'] ?? 0),
                 absint($result['synced'] ?? 0),
                 absint($result['ignored'] ?? 0),
                 absint($result['renamed'] ?? 0),
+                absint($result['blank_removed'] ?? 0),
                 absint($result['errors'] ?? 0)
             );
         }
