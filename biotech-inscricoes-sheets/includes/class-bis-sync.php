@@ -4,6 +4,9 @@ if (!defined('ABSPATH')) exit;
 class BIS_Sync {
     const CONFIRMED = array('confirmed', 'completed');
     private $api;
+    private $batch_mode = false;
+    private $order_index_cache = array();
+    private $deferred_sorts = array();
 
     public function __construct(BIS_Sheets_API $api) {
         $this->api = $api;
@@ -80,7 +83,7 @@ class BIS_Sync {
         }
         if (is_wp_error($tab)) return $tab;
         if (!$tab) return 'ignored';
-        $index = $this->api->order_index($profile['spreadsheet_id'], $tab->sheet_title);
+        $index = $this->get_order_index($profile['spreadsheet_id'], $tab->sheet_title);
         if (is_wp_error($index)) return $this->record_error($index, $order_id, $order->curso_id);
         $row = isset($index[(string) $order_id]) ? intval($index[(string) $order_id]) : 0;
         if (!in_array($order->status, self::CONFIRMED, true)) {
@@ -94,9 +97,24 @@ class BIS_Sync {
         $result = $this->api->write_order($profile['spreadsheet_id'], $tab->sheet_title, $row, $this->order_values($order));
         if (is_wp_error($result)) return $this->record_error($result, $order_id, $order->curso_id);
 
-        // Manter a guia em ordem cronológica estável pelo ID do pedido (coluna M, oculta).
-        $sorted = $this->api->sort_tab($profile['spreadsheet_id'], $tab->sheet_id);
-        if (is_wp_error($sorted)) return $this->record_error($sorted, $order_id, $order->curso_id);
+        if ($this->batch_mode) {
+            $cache_key = $this->index_cache_key($profile['spreadsheet_id'], $tab->sheet_title);
+            if (!$row) {
+                $rows = array_values($this->order_index_cache[$cache_key] ?? array());
+                $next_row = $rows ? (max(array_map('intval', $rows)) + 1) : 6;
+                $this->order_index_cache[$cache_key][(string) $order_id] = $next_row;
+            }
+            $sort_key = $profile['spreadsheet_id'] . '|' . intval($tab->sheet_id);
+            $this->deferred_sorts[$sort_key] = array(
+                'spreadsheet_id' => $profile['spreadsheet_id'],
+                'sheet_id' => intval($tab->sheet_id),
+                'course_id' => absint($order->curso_id),
+            );
+        } else {
+            // Em sincronizações isoladas, ordenar imediatamente.
+            $sorted = $this->api->sort_tab($profile['spreadsheet_id'], $tab->sheet_id);
+            if (is_wp_error($sorted)) return $this->record_error($sorted, $order_id, $order->curso_id);
+        }
 
         $this->log($row ? 'updated' : 'added', $row ? 'Inscrição atualizada.' : 'Inscrição adicionada.', $order_id, $order->curso_id);
         return true;
@@ -129,7 +147,8 @@ class BIS_Sync {
             $rename_errors += $rename_result['errors'];
         }
         $cursor = absint(get_option('bis_reconcile_cursor', 0));
-        $limit = 50;
+        // Mantém a reconciliação automática bem abaixo da cota de leituras/minuto do Sheets.
+        $limit = 20;
         if ($manual) {
             // Reconciliação manual é completa: revisa todos os pedidos confirmados,
             // do mais antigo ao mais recente, para recuperar inscrições ausentes.
@@ -153,6 +172,14 @@ class BIS_Sync {
             'renamed' => $renamed,
             'blank_removed' => $blank_removed,
         );
+        if ($manual) {
+            // Na reconciliação completa, cada guia é lida uma única vez e ordenada
+            // apenas ao final, em vez de fazer uma leitura + ordenação por pedido.
+            $this->batch_mode = true;
+            $this->order_index_cache = array();
+            $this->deferred_sorts = array();
+        }
+
         foreach ($ids as $id) {
             $order_id = absint($id);
             $sync = $this->sync_order($order_id);
@@ -164,6 +191,20 @@ class BIS_Sync {
                 $result['synced']++;
             }
         }
+        if ($manual && $this->deferred_sorts) {
+            foreach ($this->deferred_sorts as $sort) {
+                $sorted = $this->api->sort_tab($sort['spreadsheet_id'], $sort['sheet_id']);
+                if (is_wp_error($sorted)) {
+                    $result['errors']++;
+                    $this->log('error', 'Não foi possível ordenar a guia ao final da reconciliação: ' . $sorted->get_error_message(), 0, $sort['course_id']);
+                }
+            }
+        }
+
+        $this->batch_mode = false;
+        $this->order_index_cache = array();
+        $this->deferred_sorts = array();
+
         if (!$manual && $ids) update_option('bis_reconcile_cursor', max(array_map('intval', $ids)), false);
         $this->release_lock();
         return $result;
@@ -435,6 +476,22 @@ class BIS_Sync {
             isset($methods[$order->payment_method]) ? $methods[$order->payment_method] : $order->payment_method,
             round((float) $order->amount, 2), $order->coupon_code ?: '', (string) $order->id,
         );
+    }
+
+    private function index_cache_key($spreadsheet_id, $title) {
+        return (string) $spreadsheet_id . '|' . (string) $title;
+    }
+
+    private function get_order_index($spreadsheet_id, $title) {
+        if (!$this->batch_mode) return $this->api->order_index($spreadsheet_id, $title);
+
+        $key = $this->index_cache_key($spreadsheet_id, $title);
+        if (!array_key_exists($key, $this->order_index_cache)) {
+            $index = $this->api->order_index($spreadsheet_id, $title);
+            if (is_wp_error($index)) return $index;
+            $this->order_index_cache[$key] = $index;
+        }
+        return $this->order_index_cache[$key];
     }
 
     private function acquire_lock() {
