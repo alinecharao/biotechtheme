@@ -4,6 +4,7 @@ if (!defined('ABSPATH')) exit;
 class BIS_Sheets_API {
     private $auth;
     private $base = 'https://sheets.googleapis.com/v4/spreadsheets';
+    private $metadata_cache = array();
 
     public function __construct(BIS_Google_Auth $auth) { $this->auth = $auth; }
 
@@ -14,7 +15,12 @@ class BIS_Sheets_API {
     }
 
     public function metadata($spreadsheet_id) {
-        return $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '?fields=spreadsheetId,properties.title,sheets.properties');
+        $key = (string) $spreadsheet_id;
+        if (array_key_exists($key, $this->metadata_cache)) return $this->metadata_cache[$key];
+
+        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '?fields=spreadsheetId,properties.title,sheets.properties');
+        if (!is_wp_error($result)) $this->metadata_cache[$key] = $result;
+        return $result;
     }
 
     public function create_tab($spreadsheet_id, $title) {
@@ -22,22 +28,27 @@ class BIS_Sheets_API {
             'addSheet' => array('properties' => array('title' => $title, 'gridProperties' => array('frozenRowCount' => 5))),
         ))));
         if (is_wp_error($result)) return $result;
+        unset($this->metadata_cache[(string) $spreadsheet_id]);
         return isset($result['replies'][0]['addSheet']['properties']) ? $result['replies'][0]['addSheet']['properties'] : new WP_Error('bis_tab_create', 'O Google não retornou os dados da nova aba.');
     }
 
     public function rename_tab($spreadsheet_id, $sheet_id, $title) {
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
+        $result = $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
             'updateSheetProperties' => array(
                 'properties' => array('sheetId' => intval($sheet_id), 'title' => $title),
                 'fields' => 'title',
             ),
         ))));
+        if (!is_wp_error($result)) unset($this->metadata_cache[(string) $spreadsheet_id]);
+        return $result;
     }
 
     public function delete_tab($spreadsheet_id, $sheet_id) {
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
+        $result = $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
             'deleteSheet' => array('sheetId' => intval($sheet_id)),
         ))));
+        if (!is_wp_error($result)) unset($this->metadata_cache[(string) $spreadsheet_id]);
+        return $result;
     }
 
     /**
