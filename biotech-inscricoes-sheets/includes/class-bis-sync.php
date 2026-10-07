@@ -309,9 +309,12 @@ class BIS_Sync {
             $this->deferred_sorts = array();
         }
 
+        $last_processed_id = $cursor;
         foreach ($ids as $id) {
             $order_id = absint($id);
             $sync = $this->sync_order($order_id);
+            if (is_wp_error($sync) && $sync->get_error_code() === 'bis_rate_limited') break;
+            $last_processed_id = $order_id;
             if (is_wp_error($sync)) {
                 $result['errors']++;
             } elseif ($sync === 'ignored') {
@@ -334,7 +337,7 @@ class BIS_Sync {
         $this->order_index_cache = array();
         $this->deferred_sorts = array();
 
-        if (!$manual && $ids) update_option('bis_reconcile_cursor', max(array_map('intval', $ids)), false);
+        if (!$manual && $ids && $last_processed_id !== $cursor) update_option('bis_reconcile_cursor', $last_processed_id, false);
         $this->release_lock();
         return $result;
     }
@@ -428,6 +431,10 @@ class BIS_Sync {
         foreach ((array) $tabs as $tab) {
             $has_values = $this->api->tab_has_values($tab->spreadsheet_id, $tab->sheet_title);
             if (is_wp_error($has_values)) {
+                if ($has_values->get_error_code() === 'bis_rate_limited') {
+                    $result['paused'] = true;
+                    break;
+                }
                 $result['errors']++;
                 $this->record_error($has_values, 0, absint($tab->course_id));
                 continue;
