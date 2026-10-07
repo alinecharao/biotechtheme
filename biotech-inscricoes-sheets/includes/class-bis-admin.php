@@ -107,6 +107,9 @@ class BIS_Admin {
             $result = get_transient('bis_sync_result_' . get_current_user_id());
             delete_transient('bis_sync_result_' . get_current_user_id());
             $result = is_array($result) ? $result : array();
+            if (!empty($result['queued'])) {
+                $messages[$notice] = sprintf('Reconciliação iniciada em segundo plano para %d pedidos. Acompanhe o progresso nesta página.', absint($result['checked'] ?? 0));
+            } else {
             $messages[$notice] = sprintf(
                 '%d pedidos verificados: %d sincronizados, %d ignorados, %d guias renomeadas, %d cabeçalhos recuperados e %d com erro.',
                 absint($result['checked'] ?? 0),
@@ -116,6 +119,7 @@ class BIS_Admin {
                 absint($result['blank_repaired'] ?? 0),
                 absint($result['errors'] ?? 0)
             );
+            }
         }
         if (!isset($messages[$notice])) return;
         $error = in_array($notice, array('invalid_profile', 'invalid_active_profile', 'google_denied', 'google_security', 'google_error', 'sync_error'), true);
@@ -132,6 +136,8 @@ class BIS_Admin {
             $active_profile = reset($profile_keys);
         }
         $logs = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bis_sync_log ORDER BY id DESC LIMIT 30");
+        $queue = get_option('bis_reconcile_queue', array());
+        $queue = is_array($queue) ? $queue : array();
         $callback = $this->auth->callback_url();
         $connection = $this->sync->connection_check();
         ?>
@@ -167,13 +173,24 @@ class BIS_Admin {
         </div>
 
         <div class="card" style="max-width:900px"><h2>3. Sincronização</h2>
+            <?php if (($queue['status'] ?? '') === 'running'): ?>
+                <div class="notice notice-info inline"><p><strong>Reconciliação em andamento:</strong>
+                    <?php echo absint($queue['position'] ?? 0); ?> de <?php echo count($queue['ids'] ?? array()); ?> pedidos processados.
+                    As etapas restantes (recuperação de cabeçalhos e ordenação) também são executadas em segundo plano.
+                    Atualize esta página para acompanhar. Não inicie outra reconciliação.</p></div>
+            <?php elseif (($queue['status'] ?? '') === 'completed'): ?>
+                <div class="notice notice-success inline"><p><strong>Última reconciliação concluída:</strong>
+                    <?php echo absint($queue['synced'] ?? 0); ?> inscrições sincronizadas,
+                    <?php echo absint($queue['blank_repaired'] ?? 0); ?> cabeçalhos recuperados,
+                    <?php echo absint($queue['errors'] ?? 0); ?> erros.</p></div>
+            <?php endif; ?>
             <?php if (is_wp_error($connection)): ?>
                 <div class="notice notice-error inline"><p><strong>A planilha não está pronta:</strong> <?php echo esc_html($connection->get_error_message()); ?></p></div>
             <?php elseif (!empty($connection['title'])): ?>
                 <div class="notice notice-success inline"><p><strong>Planilha acessível:</strong> <?php echo esc_html($connection['title']); ?></p></div>
             <?php endif; ?>
             <form method="post"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="save_automation"><label><input type="checkbox" name="auto_sync" value="1" <?php checked(get_option('bis_auto_sync', '1'), '1'); ?>> Reconciliação automática a cada hora</label> <button class="button">Salvar</button></form>
-            <form method="post" style="margin-top:12px"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="manual_sync"><button class="button button-primary">Reconciliação completa das inscrições</button><p class="description">Revisa todos os pedidos confirmados para recuperar inscrições ausentes e corrigir a ordem nas guias.</p></form>
+            <form method="post" style="margin-top:12px"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="manual_sync"><button class="button button-primary" <?php disabled(($queue['status'] ?? '') === 'running'); ?>>Iniciar reconciliação completa</button><p class="description">Processamento em lotes de até 5 pedidos, com intervalos de aproximadamente 75 segundos. Não é necessário manter a página aberta. O WP-Cron precisa estar funcionando.</p></form>
         </div>
 
         <div class="card" style="max-width:900px"><h2>Atividade recente</h2><table class="widefat striped"><thead><tr><th>Data</th><th>Pedido</th><th>Resultado</th><th>Detalhe</th></tr></thead><tbody><?php if (!$logs): ?><tr><td colspan="4">Nenhuma sincronização registrada.</td></tr><?php else: foreach ($logs as $log): ?><tr><td><?php echo esc_html($log->created_at); ?></td><td><?php echo $log->order_id ? '#' . absint($log->order_id) : '—'; ?></td><td><?php echo esc_html($log->status); ?></td><td><?php echo esc_html($log->message); ?></td></tr><?php endforeach; endif; ?></tbody></table></div>
