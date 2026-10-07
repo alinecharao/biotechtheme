@@ -84,7 +84,7 @@ class BIS_Sheets_API {
             array(),
             array('Data do pedido', 'Nome', 'E-mail', 'CPF', 'Telefone', 'Gênero', 'Como nos encontrou', 'Tipo profissional', 'Comprovação / CRMV', 'Método de pagamento', 'Valor', 'Cupom', 'ID do pedido'),
         );
-        $write = $this->request('PUT', '/' . rawurlencode($spreadsheet_id) . '/values/' . $range . '?valueInputOption=USER_ENTERED', array('values' => $rows));
+        $write = $this->request('PUT', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($range) . '?valueInputOption=USER_ENTERED', array('values' => $rows));
         if (is_wp_error($write)) return $write;
         return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(
             array('repeatCell' => array('range' => array('sheetId' => intval($sheet_id), 'startRowIndex' => 0, 'endRowIndex' => 3, 'startColumnIndex' => 0, 'endColumnIndex' => 2), 'cell' => array('userEnteredFormat' => array('textFormat' => array('bold' => true))), 'fields' => 'userEnteredFormat.textFormat.bold')),
@@ -104,13 +104,13 @@ class BIS_Sheets_API {
     }
 
     public function tab_has_values($spreadsheet_id, $title) {
-        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . $this->range($title, 'A1:M5'));
+        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A1:M5')));
         if (is_wp_error($result)) return $result;
         return !empty($result['values']);
     }
 
     public function order_index($spreadsheet_id, $title) {
-        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . $this->range($title, 'M6:M'));
+        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'M6:M')));
         if (is_wp_error($result)) return $result;
         $index = array();
         foreach ((array) (isset($result['values']) ? $result['values'] : array()) as $offset => $row) {
@@ -121,9 +121,9 @@ class BIS_Sheets_API {
 
     public function write_order($spreadsheet_id, $title, $row_number, $values) {
         if ($row_number) {
-            return $this->request('PUT', '/' . rawurlencode($spreadsheet_id) . '/values/' . $this->range($title, 'A' . intval($row_number) . ':M' . intval($row_number)) . '?valueInputOption=USER_ENTERED', array('values' => array($values)));
+            return $this->request('PUT', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A' . intval($row_number) . ':M' . intval($row_number))) . '?valueInputOption=USER_ENTERED', array('values' => array($values)));
         }
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . '/values/' . $this->range($title, 'A:M') . ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS', array('values' => array($values)));
+        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A:M')) . ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS', array('values' => array($values)));
     }
 
     public function delete_row($spreadsheet_id, $sheet_id, $row_number) {
