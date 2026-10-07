@@ -34,6 +34,36 @@ class BIS_Sheets_API {
         ))));
     }
 
+    public function delete_tab($spreadsheet_id, $sheet_id) {
+        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
+            'deleteSheet' => array('sheetId' => intval($sheet_id)),
+        ))));
+    }
+
+    /**
+     * Ordena as inscrições pelo ID do pedido (coluna M, oculta).
+     * Como os IDs são crescentes, isso mantém a mesma ordem cronológica
+     * mesmo quando uma inscrição antiga é recuperada posteriormente.
+     */
+    public function sort_tab($spreadsheet_id, $sheet_id) {
+        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
+            'sortRange' => array(
+                'range' => array(
+                    'sheetId' => intval($sheet_id),
+                    'startRowIndex' => 5,
+                    'startColumnIndex' => 0,
+                    'endColumnIndex' => 13,
+                ),
+                'sortSpecs' => array(
+                    array(
+                        'dimensionIndex' => 12,
+                        'sortOrder' => 'ASCENDING',
+                    ),
+                ),
+            ),
+        ))));
+    }
+
     public function setup_tab($spreadsheet_id, $sheet_id, $title, $course, $class_name, $date) {
         $range = $this->range($title, 'A1:M5');
         $rows = array(
@@ -60,6 +90,12 @@ class BIS_Sheets_API {
             $this->body_format_request($sheet_id),
             $this->currency_format_request($sheet_id),
         )));
+    }
+
+    public function tab_has_values($spreadsheet_id, $title) {
+        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . $this->range($title, 'A1:M5'));
+        if (is_wp_error($result)) return $result;
+        return !empty($result['values']);
     }
 
     public function order_index($spreadsheet_id, $title) {

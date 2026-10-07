@@ -11,7 +11,6 @@ class BIS_Sync {
         add_action('cursos_payment_cancelled', array($this, 'on_order_event'), 30, 2);
         add_action('cursos_payment_status_changed', array($this, 'on_status_event'), 30, 3);
         add_action('cursos_order_created', array($this, 'on_order_event'), 30, 2);
-        add_action('save_post_curso', array($this, 'on_course_saved'), 40, 3);
         add_action('bis_reconcile_event', array($this, 'reconcile'));
     }
 
@@ -75,7 +74,8 @@ class BIS_Sync {
             $tab = $renamed;
         }
         if (!$tab && in_array($order->status, self::CONFIRMED, true)) {
-            if ($this->class_is_past($class)) return new WP_Error('bis_past_class', 'A turma encerrada não possui aba e não pode ser recriada.');
+            // Se existe inscrição confirmada, a turma precisa existir na planilha,
+            // mesmo que a data da turma já tenha passado.
             $tab = $this->ensure_tab($order->curso_id, $class, $profile);
         }
         if (is_wp_error($tab)) return $tab;
@@ -93,6 +93,11 @@ class BIS_Sync {
         }
         $result = $this->api->write_order($profile['spreadsheet_id'], $tab->sheet_title, $row, $this->order_values($order));
         if (is_wp_error($result)) return $this->record_error($result, $order_id, $order->curso_id);
+
+        // Manter a guia em ordem cronológica estável pelo ID do pedido (coluna M, oculta).
+        $sorted = $this->api->sort_tab($profile['spreadsheet_id'], $tab->sheet_id);
+        if (is_wp_error($sorted)) return $this->record_error($sorted, $order_id, $order->curso_id);
+
         $this->log($row ? 'updated' : 'added', $row ? 'Inscrição atualizada.' : 'Inscrição adicionada.', $order_id, $order->curso_id);
         return true;
     }
@@ -113,17 +118,26 @@ class BIS_Sync {
         }
         $renamed = 0;
         $rename_errors = 0;
+        $blank_removed = 0;
         if ($manual) {
+            $cleanup = $this->cleanup_blank_tabs();
+            $blank_removed = $cleanup['removed'];
+            $rename_errors += $cleanup['errors'];
+
             $rename_result = $this->rename_existing_tabs();
             $renamed = $rename_result['renamed'];
-            $rename_errors = $rename_result['errors'];
+            $rename_errors += $rename_result['errors'];
         }
         $cursor = absint(get_option('bis_reconcile_cursor', 0));
-        $limit = $manual ? 200 : 50;
+        $limit = 50;
         if ($manual) {
+            // Reconciliação manual é completa: revisa todos os pedidos confirmados,
+            // do mais antigo ao mais recente, para recuperar inscrições ausentes.
             $placeholders = implode(',', array_fill(0, count(self::CONFIRMED), '%s'));
-            $query_args = array_merge(self::CONFIRMED, array($limit));
-            $ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM {$orders} WHERE status IN ({$placeholders}) ORDER BY id DESC LIMIT %d", $query_args));
+            $ids = $wpdb->get_col($wpdb->prepare(
+                "SELECT id FROM {$orders} WHERE status IN ({$placeholders}) ORDER BY id ASC",
+                self::CONFIRMED
+            ));
         } else {
             $ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM {$orders} WHERE id > %d ORDER BY id ASC LIMIT %d", $cursor, $limit));
         }
@@ -131,7 +145,14 @@ class BIS_Sync {
             update_option('bis_reconcile_cursor', 0, false);
             $ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM {$orders} ORDER BY id ASC LIMIT %d", $limit));
         }
-        $result = array('checked' => count($ids), 'synced' => 0, 'ignored' => 0, 'errors' => $rename_errors, 'renamed' => $renamed);
+        $result = array(
+            'checked' => count($ids),
+            'synced' => 0,
+            'ignored' => 0,
+            'errors' => $rename_errors,
+            'renamed' => $renamed,
+            'blank_removed' => $blank_removed,
+        );
         foreach ($ids as $id) {
             $order_id = absint($id);
             $sync = $this->sync_order($order_id);
@@ -181,14 +202,80 @@ class BIS_Sync {
                 }
             }
         }
-        if (!$sheet) $sheet = $this->api->create_tab($profile['spreadsheet_id'], $title);
+        $created_now = false;
+        if (!$sheet) {
+            $sheet = $this->api->create_tab($profile['spreadsheet_id'], $title);
+            $created_now = true;
+        }
         if (is_wp_error($sheet)) return $sheet;
+
+        $setup = $this->api->setup_tab(
+            $profile['spreadsheet_id'],
+            $sheet['sheetId'],
+            $sheet['title'],
+            get_the_title($course_id),
+            isset($class['nome']) ? $class['nome'] : $class_id,
+            $this->class_date($class)
+        );
+
+        if (is_wp_error($setup)) {
+            // Evita deixar guias vazias quando a estrutura inicial falha.
+            if ($created_now) $this->api->delete_tab($profile['spreadsheet_id'], $sheet['sheetId']);
+            return $setup;
+        }
+
         global $wpdb;
         $table = $wpdb->prefix . 'bis_sheet_tabs';
-        $wpdb->replace($table, array('course_id' => $course_id, 'class_key' => $class_id, 'profile_key' => $profile['key'], 'spreadsheet_id' => $profile['spreadsheet_id'], 'sheet_id' => intval($sheet['sheetId']), 'sheet_title' => $sheet['title'], 'updated_at' => current_time('mysql')), array('%d', '%s', '%s', '%s', '%d', '%s', '%s'));
-        $setup = $this->api->setup_tab($profile['spreadsheet_id'], $sheet['sheetId'], $sheet['title'], get_the_title($course_id), isset($class['nome']) ? $class['nome'] : $class_id, $this->class_date($class));
-        if (is_wp_error($setup)) return $setup;
+        $wpdb->replace(
+            $table,
+            array(
+                'course_id' => $course_id,
+                'class_key' => $class_id,
+                'profile_key' => $profile['key'],
+                'spreadsheet_id' => $profile['spreadsheet_id'],
+                'sheet_id' => intval($sheet['sheetId']),
+                'sheet_title' => $sheet['title'],
+                'updated_at' => current_time('mysql'),
+            ),
+            array('%d', '%s', '%s', '%s', '%d', '%s', '%s')
+        );
+
         return $this->find_tab($course_id, $class_id);
+    }
+
+    private function cleanup_blank_tabs() {
+        global $wpdb;
+        $tabs = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs ORDER BY spreadsheet_id ASC, id ASC");
+        $result = array('removed' => 0, 'errors' => 0);
+
+        foreach ((array) $tabs as $tab) {
+            $has_values = $this->api->tab_has_values($tab->spreadsheet_id, $tab->sheet_title);
+            if (is_wp_error($has_values)) {
+                // Se a guia já não existe no Google, apenas remover o mapeamento órfão.
+                $status = (array) $has_values->get_error_data();
+                if (!empty($status['status']) && intval($status['status']) === 400) {
+                    $wpdb->delete($wpdb->prefix . 'bis_sheet_tabs', array('id' => absint($tab->id)), array('%d'));
+                } else {
+                    $result['errors']++;
+                }
+                continue;
+            }
+
+            if ($has_values) continue;
+
+            $deleted = $this->api->delete_tab($tab->spreadsheet_id, $tab->sheet_id);
+            if (is_wp_error($deleted)) {
+                $result['errors']++;
+                $this->log('error', 'Não foi possível remover guia vazia ' . $tab->sheet_title . ': ' . $deleted->get_error_message(), 0, absint($tab->course_id));
+                continue;
+            }
+
+            $wpdb->delete($wpdb->prefix . 'bis_sheet_tabs', array('id' => absint($tab->id)), array('%d'));
+            $result['removed']++;
+            $this->log('removed_blank_tab', 'Guia vazia removida: ' . $tab->sheet_title . '.', 0, absint($tab->course_id));
+        }
+
+        return $result;
     }
 
     private function rename_existing_tabs() {
@@ -283,7 +370,18 @@ class BIS_Sync {
         return array('id' => $class_id ?: 'sem-turma', 'nome' => $class_id ?: 'Inscrições', 'data_inicio' => '', 'data_fim' => '');
     }
 
-    private function class_id($class) { return !empty($class['id']) ? sanitize_text_field($class['id']) : 'sem-turma'; }
+    private function class_id($class) {
+        if (!empty($class['id'])) return sanitize_text_field($class['id']);
+
+        // Turmas antigas podem não ter ID preenchido. Use nome/data como chave estável
+        // para impedir que várias turmas diferentes colidam em "sem-turma".
+        $seed = trim((string) ($class['nome'] ?? '')) . '|' .
+                trim((string) ($class['data_inicio'] ?? '')) . '|' .
+                trim((string) ($class['data_fim'] ?? ''));
+        if (trim(str_replace('|', '', $seed)) !== '') return 'turma-' . substr(md5($seed), 0, 12);
+
+        return 'sem-turma';
+    }
     private function class_is_past($class) {
         $date = !empty($class['data_fim']) ? $class['data_fim'] : (!empty($class['data_inicio']) ? $class['data_inicio'] : '');
         return $date && strtotime($date . ' 23:59:59') < current_time('timestamp');

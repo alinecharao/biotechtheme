@@ -108,11 +108,12 @@ class BIS_Admin {
             delete_transient('bis_sync_result_' . get_current_user_id());
             $result = is_array($result) ? $result : array();
             $messages[$notice] = sprintf(
-                '%d pedidos verificados: %d sincronizados, %d ignorados, %d guias renomeadas e %d com erro.',
+                '%d pedidos verificados: %d sincronizados, %d ignorados, %d guias renomeadas, %d guias vazias removidas e %d com erro.',
                 absint($result['checked'] ?? 0),
                 absint($result['synced'] ?? 0),
                 absint($result['ignored'] ?? 0),
                 absint($result['renamed'] ?? 0),
+                absint($result['blank_removed'] ?? 0),
                 absint($result['errors'] ?? 0)
             );
         }
@@ -172,7 +173,7 @@ class BIS_Admin {
                 <div class="notice notice-success inline"><p><strong>Planilha acessível:</strong> <?php echo esc_html($connection['title']); ?></p></div>
             <?php endif; ?>
             <form method="post"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="save_automation"><label><input type="checkbox" name="auto_sync" value="1" <?php checked(get_option('bis_auto_sync', '1'), '1'); ?>> Reconciliação automática a cada hora</label> <button class="button">Salvar</button></form>
-            <form method="post" style="margin-top:12px"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="manual_sync"><button class="button button-primary">Verificar próximos 200 pedidos</button></form>
+            <form method="post" style="margin-top:12px"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="manual_sync"><button class="button button-primary">Reconciliação completa das inscrições</button><p class="description">Revisa todos os pedidos confirmados para recuperar inscrições ausentes e corrigir a ordem nas guias.</p></form>
         </div>
 
         <div class="card" style="max-width:900px"><h2>Atividade recente</h2><table class="widefat striped"><thead><tr><th>Data</th><th>Pedido</th><th>Resultado</th><th>Detalhe</th></tr></thead><tbody><?php if (!$logs): ?><tr><td colspan="4">Nenhuma sincronização registrada.</td></tr><?php else: foreach ($logs as $log): ?><tr><td><?php echo esc_html($log->created_at); ?></td><td><?php echo $log->order_id ? '#' . absint($log->order_id) : '—'; ?></td><td><?php echo esc_html($log->status); ?></td><td><?php echo esc_html($log->message); ?></td></tr><?php endforeach; endif; ?></tbody></table></div>
