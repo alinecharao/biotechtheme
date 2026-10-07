@@ -95,7 +95,7 @@ class BIS_Sync {
             }
             return true;
         }
-        $result = $this->api->write_order($profile['spreadsheet_id'], $tab->sheet_title, $row, $this->order_values($order));
+        $result = $this->api->write_order($profile['spreadsheet_id'], $tab->sheet_title, $row, $this->order_values($order), $tab->sheet_id);
         if (is_wp_error($result)) return $this->record_error($result, $order_id, $order->curso_id);
 
         if ($this->batch_mode) {
@@ -146,6 +146,8 @@ class BIS_Sync {
         $state = array(
             'status' => 'running', 'ids' => $ids, 'position' => 0,
             'tabs' => $tabs, 'tab_position' => 0, 'sorts' => array(),
+            'orphans' => array(), 'orphan_position' => 0, 'orphan_scan_done' => false,
+            'blank_orphans_removed' => 0,
             'synced' => 0, 'ignored' => 0, 'errors' => 0,
             'blank_repaired' => 0, 'started_at' => time(),
         );
@@ -202,6 +204,24 @@ class BIS_Sync {
             }
         }
 
+        // Incluir TODAS as guias mapeadas na normalização de estilo,
+        // mesmo aquelas que não receberam pedidos neste lote.
+        if ($state['position'] >= count($state['ids'])
+            && $state['tab_position'] >= count($state['tabs'])
+            && empty($state['all_tabs_enqueued'])) {
+            global $wpdb;
+            $mapped_tabs = $wpdb->get_results("SELECT sheet_id, spreadsheet_id, course_id FROM {$wpdb->prefix}bis_sheet_tabs");
+            foreach ((array) $mapped_tabs as $mapped_tab) {
+                $key = $mapped_tab->spreadsheet_id . '|' . intval($mapped_tab->sheet_id);
+                $state['sorts'][$key] = array(
+                    'spreadsheet_id' => $mapped_tab->spreadsheet_id,
+                    'sheet_id' => intval($mapped_tab->sheet_id),
+                    'course_id' => intval($mapped_tab->course_id),
+                );
+            }
+            $state['all_tabs_enqueued'] = true;
+        }
+
         // As ordenações são agendadas por guia e distribuídas entre execuções.
         if ($state['position'] >= count($state['ids'])
             && $state['tab_position'] >= count($state['tabs'])) {
@@ -218,21 +238,112 @@ class BIS_Sync {
                 $sorted++;
             }
         }
+        // Guias órfãs: só nomes no padrão gerado pelo plugin, sem mapeamento
+        // e sem QUALQUER conteúdo são candidatas a exclusão.
         if ($state['position'] >= count($state['ids'])
             && $state['tab_position'] >= count($state['tabs'])
             && empty($state['sorts'])) {
+            if (empty($state['orphan_scan_done'])) {
+                $orphans = $this->find_orphan_candidates();
+                if (is_wp_error($orphans)) {
+                    if ($orphans->get_error_code() !== 'bis_rate_limited') {
+                        $state['errors']++;
+                        $this->record_error($orphans, 0, 0);
+                        $state['orphan_scan_done'] = true;
+                    }
+                } else {
+                    $state['orphans'] = $orphans;
+                    $state['orphan_scan_done'] = true;
+                }
+            }
+
+            if (!empty($state['orphan_scan_done'])) {
+                $checked_orphans = 0;
+                while ($checked_orphans < 2 && $state['orphan_position'] < count($state['orphans'])) {
+                    $orphan = $state['orphans'][$state['orphan_position']];
+                    global $wpdb;
+                    $mapped = $wpdb->get_var($wpdb->prepare(
+                        "SELECT id FROM {$wpdb->prefix}bis_sheet_tabs WHERE spreadsheet_id = %s AND sheet_id = %d LIMIT 1",
+                        $orphan['spreadsheet_id'], $orphan['sheet_id']
+                    ));
+                    if ($mapped) {
+                        $state['orphan_position']++;
+                        $checked_orphans++;
+                        continue;
+                    }
+                    $has_values = $this->api->tab_has_any_values($orphan['spreadsheet_id'], $orphan['title']);
+                    if (is_wp_error($has_values)) {
+                        if ($has_values->get_error_code() === 'bis_rate_limited') break;
+                        $state['errors']++;
+                        $this->record_error($has_values, 0, 0);
+                    } elseif (!$has_values) {
+                        $deleted = $this->api->delete_tab($orphan['spreadsheet_id'], $orphan['sheet_id']);
+                        if (is_wp_error($deleted)) {
+                            if ($deleted->get_error_code() === 'bis_rate_limited') break;
+                            $state['errors']++;
+                            $this->record_error($deleted, 0, 0);
+                        } else {
+                            $state['blank_orphans_removed']++;
+                            $this->log('removed_blank_tab', 'Guia órfã e vazia removida: ' . $orphan['title'] . '.');
+                        }
+                    }
+                    $state['orphan_position']++;
+                    $checked_orphans++;
+                }
+            }
+        }
+
+        if ($state['position'] >= count($state['ids'])
+            && $state['tab_position'] >= count($state['tabs'])
+            && empty($state['sorts'])
+            && !empty($state['orphan_scan_done'])
+            && $state['orphan_position'] >= count($state['orphans'])) {
             $state['status'] = 'completed';
             $state['completed_at'] = time();
             $state['ids'] = array();
             $state['tabs'] = array();
             $this->log('completed', 'Reconciliação completa concluída: ' . $state['synced']
                 . ' inscrições sincronizadas, ' . $state['blank_repaired']
-                . ' cabeçalhos recuperados e ' . $state['errors'] . ' erros.');
+                . ' cabeçalhos recuperados, ' . $state['blank_orphans_removed'] . ' guias órfãs vazias removidas e ' . $state['errors'] . ' erros.');
         }
 
         update_option('bis_reconcile_queue', $state, false);
         $this->release_lock();
         if ($state['status'] === 'running') $this->schedule_queue_tick();
+    }
+
+    private function find_orphan_candidates() {
+        global $wpdb;
+        $profiles = (array) get_option('bis_sheet_profiles', array());
+        $spreadsheet_ids = array();
+        foreach ($profiles as $profile) {
+            if (!empty($profile['spreadsheet_id'])) $spreadsheet_ids[] = $profile['spreadsheet_id'];
+        }
+        $previous_ids = $wpdb->get_col("SELECT DISTINCT spreadsheet_id FROM {$wpdb->prefix}bis_sheet_tabs");
+        $spreadsheet_ids = array_unique(array_merge($spreadsheet_ids, (array) $previous_ids));
+        $candidates = array();
+
+        foreach ($spreadsheet_ids as $spreadsheet_id) {
+            $metadata = $this->api->metadata($spreadsheet_id);
+            if (is_wp_error($metadata)) return $metadata;
+            foreach ((array) ($metadata['sheets'] ?? array()) as $sheet) {
+                $title = (string) ($sheet['properties']['title'] ?? '');
+                $sheet_id = intval($sheet['properties']['sheetId'] ?? 0);
+                // Limitar às nomenclaturas automáticas conhecidas.
+                if (!$sheet_id || !preg_match('/^Curso\\s+(?:-\\s*)?(?:\\d{1,2}\\/\\d{1,2}|\\d{2,})/u', $title)) continue;
+                $mapped = $wpdb->get_var($wpdb->prepare(
+                    "SELECT id FROM {$wpdb->prefix}bis_sheet_tabs WHERE spreadsheet_id = %s AND sheet_id = %d LIMIT 1",
+                    $spreadsheet_id, $sheet_id
+                ));
+                if ($mapped) continue;
+                $candidates[] = array(
+                    'spreadsheet_id' => $spreadsheet_id,
+                    'sheet_id' => $sheet_id,
+                    'title' => $title,
+                );
+            }
+        }
+        return $candidates;
     }
 
     private function schedule_queue_tick() {
