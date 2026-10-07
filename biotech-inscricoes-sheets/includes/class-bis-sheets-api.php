@@ -57,22 +57,15 @@ class BIS_Sheets_API {
      * mesmo quando uma inscrição antiga é recuperada posteriormente.
      */
     public function sort_tab($spreadsheet_id, $sheet_id) {
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
-            'sortRange' => array(
-                'range' => array(
-                    'sheetId' => intval($sheet_id),
-                    'startRowIndex' => 5,
-                    'startColumnIndex' => 0,
-                    'endColumnIndex' => 13,
-                ),
-                'sortSpecs' => array(
-                    array(
-                        'dimensionIndex' => 12,
-                        'sortOrder' => 'ASCENDING',
-                    ),
-                ),
-            ),
-        ))));
+        // Uma única chamada para normalizar as inscrições e ordenar a guia.
+        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(
+            $this->body_format_request($sheet_id),
+            $this->currency_format_request($sheet_id),
+            array('sortRange' => array(
+                'range' => array('sheetId' => intval($sheet_id), 'startRowIndex' => 5, 'startColumnIndex' => 0, 'endColumnIndex' => 13),
+                'sortSpecs' => array(array('dimensionIndex' => 12, 'sortOrder' => 'ASCENDING')),
+            )),
+        )));
     }
 
     public function setup_tab($spreadsheet_id, $sheet_id, $title, $course, $class_name, $date) {
@@ -119,11 +112,40 @@ class BIS_Sheets_API {
         return $index;
     }
 
-    public function write_order($spreadsheet_id, $title, $row_number, $values) {
+    public function write_order($spreadsheet_id, $title, $row_number, $values, $sheet_id = 0) {
         if ($row_number) {
             return $this->request('PUT', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A' . intval($row_number) . ':M' . intval($row_number))) . '?valueInputOption=USER_ENTERED', array('values' => array($values)));
         }
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A:M')) . ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS', array('values' => array($values)));
+        if (!$sheet_id) return new WP_Error('bis_missing_sheet_id', 'Identificador da guia não encontrado.');
+
+        // appendCells grava conteúdo e estilo em um único request, sem herdar
+        // o fundo verde, negrito e texto branco do cabeçalho (linha 5).
+        $cells = array();
+        foreach (array_values($values) as $column => $value) {
+            $cell = array(
+                'userEnteredValue' => ($column === 10 && is_numeric($value))
+                    ? array('numberValue' => (float) $value)
+                    : array('stringValue' => (string) $value),
+                'userEnteredFormat' => array(
+                    'backgroundColor' => array('red' => 1, 'green' => 1, 'blue' => 1),
+                    'textFormat' => array(
+                        'bold' => false,
+                        'foregroundColor' => array('red' => 0, 'green' => 0, 'blue' => 0),
+                    ),
+                ),
+            );
+            if ($column === 10) {
+                $cell['userEnteredFormat']['numberFormat'] = array('type' => 'CURRENCY', 'pattern' => '"R$"#,##0.00');
+            }
+            $cells[] = $cell;
+        }
+        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
+            'appendCells' => array(
+                'sheetId' => intval($sheet_id),
+                'rows' => array(array('values' => $cells)),
+                'fields' => 'userEnteredValue,userEnteredFormat',
+            ),
+        ))));
     }
 
     public function delete_row($spreadsheet_id, $sheet_id, $row_number) {
