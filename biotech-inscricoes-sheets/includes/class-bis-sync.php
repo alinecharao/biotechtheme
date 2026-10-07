@@ -137,10 +137,12 @@ class BIS_Sync {
         $renamed = 0;
         $rename_errors = 0;
         $blank_removed = 0;
+        $blank_repaired = 0;
         if ($manual) {
-            $cleanup = $this->cleanup_blank_tabs();
-            $blank_removed = $cleanup['removed'];
-            $rename_errors += $cleanup['errors'];
+            // Reconstruir cabeçalhos ausentes sem remover guias ou inscrições existentes.
+            $repaired = $this->repair_blank_tabs();
+            $blank_repaired = $repaired['repaired'];
+            $rename_errors += $repaired['errors'];
 
             $rename_result = $this->rename_existing_tabs();
             $renamed = $rename_result['renamed'];
@@ -171,6 +173,7 @@ class BIS_Sync {
             'errors' => $rename_errors,
             'renamed' => $renamed,
             'blank_removed' => $blank_removed,
+            'blank_repaired' => $blank_repaired,
         );
         if ($manual) {
             // Na reconciliação completa, cada guia é lida uma única vez e ordenada
@@ -261,7 +264,12 @@ class BIS_Sync {
 
         if (is_wp_error($setup)) {
             // Evita deixar guias vazias quando a estrutura inicial falha.
-            if ($created_now) $this->api->delete_tab($profile['spreadsheet_id'], $sheet['sheetId']);
+            if ($created_now) {
+                $deleted = $this->api->delete_tab($profile['spreadsheet_id'], $sheet['sheetId']);
+                if (is_wp_error($deleted)) {
+                    $this->log('error', 'A guia ' . $sheet['title'] . ' ficou vazia após falha de inicialização. Não foi possível removê-la: ' . $deleted->get_error_message(), 0, $course_id);
+                }
+            }
             return $setup;
         }
 
@@ -284,36 +292,37 @@ class BIS_Sync {
         return $this->find_tab($course_id, $class_id);
     }
 
-    private function cleanup_blank_tabs() {
+    private function repair_blank_tabs() {
         global $wpdb;
         $tabs = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs ORDER BY spreadsheet_id ASC, id ASC");
-        $result = array('removed' => 0, 'errors' => 0);
+        $result = array('repaired' => 0, 'errors' => 0);
 
         foreach ((array) $tabs as $tab) {
             $has_values = $this->api->tab_has_values($tab->spreadsheet_id, $tab->sheet_title);
             if (is_wp_error($has_values)) {
-                // Se a guia já não existe no Google, apenas remover o mapeamento órfão.
-                $status = (array) $has_values->get_error_data();
-                if (!empty($status['status']) && intval($status['status']) === 400) {
-                    $wpdb->delete($wpdb->prefix . 'bis_sheet_tabs', array('id' => absint($tab->id)), array('%d'));
-                } else {
-                    $result['errors']++;
-                }
+                $result['errors']++;
+                $this->record_error($has_values, 0, absint($tab->course_id));
                 continue;
             }
-
             if ($has_values) continue;
 
-            $deleted = $this->api->delete_tab($tab->spreadsheet_id, $tab->sheet_id);
-            if (is_wp_error($deleted)) {
+            $class = $this->find_class(absint($tab->course_id), $tab->class_key);
+            $setup = $this->api->setup_tab(
+                $tab->spreadsheet_id,
+                intval($tab->sheet_id),
+                $tab->sheet_title,
+                get_the_title(absint($tab->course_id)),
+                isset($class['nome']) ? $class['nome'] : $tab->class_key,
+                $this->class_date($class)
+            );
+            if (is_wp_error($setup)) {
                 $result['errors']++;
-                $this->log('error', 'Não foi possível remover guia vazia ' . $tab->sheet_title . ': ' . $deleted->get_error_message(), 0, absint($tab->course_id));
+                $this->record_error($setup, 0, absint($tab->course_id));
                 continue;
             }
 
-            $wpdb->delete($wpdb->prefix . 'bis_sheet_tabs', array('id' => absint($tab->id)), array('%d'));
-            $result['removed']++;
-            $this->log('removed_blank_tab', 'Guia vazia removida: ' . $tab->sheet_title . '.', 0, absint($tab->course_id));
+            $result['repaired']++;
+            $this->log('repaired', 'Cabeçalho recuperado na guia ' . $tab->sheet_title . '.', 0, absint($tab->course_id));
         }
 
         return $result;
