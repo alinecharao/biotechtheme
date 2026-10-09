@@ -422,16 +422,16 @@ class BIS_Sync {
         $class = $this->find_class($course_id, $class_key);
         $raw_id = trim((string) ($class['id'] ?? ''));
 
-        if ($raw_id !== '') {
+        if ($class_key === 'sem-turma' || $raw_id === '' || $raw_id === 'sem-turma') {
+            $orders = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$table} WHERE curso_id = %d AND (turma_id IS NULL OR turma_id = '' OR turma_id = 'sem-turma') ORDER BY id ASC",
+                $course_id
+            ));
+        } elseif ($raw_id !== '') {
             $orders = $wpdb->get_results($wpdb->prepare(
                 "SELECT * FROM {$table} WHERE curso_id = %d AND turma_id = %s ORDER BY id ASC",
                 $course_id,
                 $raw_id
-            ));
-        } elseif ($class_key === 'sem-turma') {
-            $orders = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM {$table} WHERE curso_id = %d AND (turma_id IS NULL OR turma_id = '') ORDER BY id ASC",
-                $course_id
             ));
         } else {
             $orders = $wpdb->get_results($wpdb->prepare(
