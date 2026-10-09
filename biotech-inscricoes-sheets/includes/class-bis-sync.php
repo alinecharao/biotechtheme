@@ -92,6 +92,11 @@ class BIS_Sync {
     }
 
     private function start_queue($force) {
+        if ($force) {
+            $prepared = $this->prepare_active_spreadsheet_rebuild();
+            if (is_wp_error($prepared)) return $prepared;
+        }
+
         $tasks = $this->collect_tasks();
 
         $state = array(
@@ -212,6 +217,37 @@ class BIS_Sync {
         if (!wp_next_scheduled('bis_reconcile_queue_tick')) {
             wp_schedule_single_event(time() + max(5, absint($delay)), 'bis_reconcile_queue_tick');
         }
+    }
+
+    /**
+     * A reconstrução manual sempre representa a planilha ativa atual.
+     * Ao trocar de planilha, removemos apenas os mapeamentos locais que ainda
+     * apontam para planilhas anteriores. Nenhuma aba da planilha antiga é apagada.
+     */
+    private function prepare_active_spreadsheet_rebuild() {
+        $profile = $this->active_profile();
+        if (!$profile) {
+            return new WP_Error('bis_no_profile', 'Defina a planilha ativa nas configurações do plugin.');
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'bis_sheet_tabs';
+
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$table} WHERE spreadsheet_id <> %s",
+            $profile['spreadsheet_id']
+        ));
+
+        // Limpar hashes antigos para garantir que a primeira reconstrução da
+        // planilha nova grave todas as turmas, mesmo que o conteúdo seja igual.
+        $option_names = $wpdb->get_col(
+            "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'bis_hash_%'"
+        );
+        foreach ((array) $option_names as $option_name) {
+            delete_option($option_name);
+        }
+
+        return true;
     }
 
     private function collect_tasks() {
@@ -448,10 +484,24 @@ class BIS_Sync {
         $class = $this->find_class($course_id, $class_key);
         $raw_id = trim((string) ($class['id'] ?? ''));
 
+        $course_classes = $this->course_classes($course_id);
+        $single_class = count($course_classes) === 1;
+
         if ($class_key === 'sem-turma' || $raw_id === '' || $raw_id === 'sem-turma') {
             $orders = $wpdb->get_results($wpdb->prepare(
                 "SELECT * FROM {$table} WHERE curso_id = %d AND (turma_id IS NULL OR turma_id = '' OR turma_id = 'sem-turma') ORDER BY id ASC",
                 $course_id
+            ));
+        } elseif ($raw_id !== '' && $single_class) {
+            // Compatibilidade com inscrições antigas: se o curso tem uma única
+            // turma, pedidos antigos sem turma_id pertencem inequivocamente a ela.
+            $orders = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$table}
+                 WHERE curso_id = %d
+                   AND (turma_id = %s OR turma_id IS NULL OR turma_id = '' OR turma_id = 'sem-turma')
+                 ORDER BY id ASC",
+                $course_id,
+                $raw_id
             ));
         } elseif ($raw_id !== '') {
             $orders = $wpdb->get_results($wpdb->prepare(
@@ -703,24 +753,38 @@ class BIS_Sync {
     }
 
     private function profile_for_course_class($course_id, $class_key) {
-        $tab = $this->find_tab($course_id, $class_key);
-        if (!$tab) return $this->active_profile();
+        $active = $this->active_profile();
+        if (!$active) return null;
 
-        $profiles = (array) get_option('bis_sheet_profiles', array());
-        return array(
-            'key' => $tab->profile_key,
-            'name' => $profiles[$tab->profile_key]['name'] ?? 'Planilha',
-            'spreadsheet_id' => $tab->spreadsheet_id,
-        );
+        $tab = $this->find_tab($course_id, $class_key);
+        if (!$tab) return $active;
+
+        // Se restou um mapeamento antigo por qualquer motivo, a planilha ativa
+        // tem prioridade na v2. O remapeamento ocorrerá na reconstrução completa.
+        if ((string) $tab->spreadsheet_id !== (string) $active['spreadsheet_id']) {
+            return $active;
+        }
+
+        return $active;
     }
 
     private function find_tab($course_id, $class_key) {
         global $wpdb;
-        return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}bis_sheet_tabs WHERE course_id = %d AND class_key = %s ORDER BY id ASC LIMIT 1",
-            $course_id,
-            $class_key
-        ));
+        $active = $this->active_profile();
+
+        if ($active) {
+            $tab = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}bis_sheet_tabs
+                 WHERE course_id = %d AND class_key = %s AND spreadsheet_id = %s
+                 ORDER BY id ASC LIMIT 1",
+                $course_id,
+                $class_key,
+                $active['spreadsheet_id']
+            ));
+            if ($tab) return $tab;
+        }
+
+        return null;
     }
 
     private function hash_option_key($course_id, $class_key, $spreadsheet_id) {
