@@ -335,13 +335,17 @@ class BIS_Sync {
         if (is_wp_error($result)) {
             if (!empty($tab_info['created'])) {
                 // Não deixar guia vazia/orfã se a primeira gravação falhar.
-                $this->api->delete_tab($profile['spreadsheet_id'], intval($tab->sheet_id));
-                global $wpdb;
-                $wpdb->delete(
-                    $wpdb->prefix . 'bis_sheet_tabs',
-                    array('id' => absint($tab->id)),
-                    array('%d')
-                );
+                // Se a própria exclusão for bloqueada pela cota, preservamos o
+                // mapeamento para que o próximo ciclo tente preencher a mesma aba.
+                $deleted = $this->api->delete_tab($profile['spreadsheet_id'], intval($tab->sheet_id));
+                if (!is_wp_error($deleted)) {
+                    global $wpdb;
+                    $wpdb->delete(
+                        $wpdb->prefix . 'bis_sheet_tabs',
+                        array('id' => absint($tab->id)),
+                        array('%d')
+                    );
+                }
             }
             return $result;
         }
