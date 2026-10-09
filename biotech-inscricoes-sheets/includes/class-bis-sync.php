@@ -332,7 +332,19 @@ class BIS_Sync {
             $force || !empty($tab_info['created']) || !empty($tab_info['renamed'])
         );
 
-        if (is_wp_error($result)) return $result;
+        if (is_wp_error($result)) {
+            if (!empty($tab_info['created'])) {
+                // Não deixar guia vazia/orfã se a primeira gravação falhar.
+                $this->api->delete_tab($profile['spreadsheet_id'], intval($tab->sheet_id));
+                global $wpdb;
+                $wpdb->delete(
+                    $wpdb->prefix . 'bis_sheet_tabs',
+                    array('id' => absint($tab->id)),
+                    array('%d')
+                );
+            }
+            return $result;
+        }
 
         update_option($hash_key, $hash, false);
         $this->log('synced', 'Aba ' . $tab->sheet_title . ' sincronizada.', 0, $course_id);
