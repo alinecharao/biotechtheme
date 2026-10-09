@@ -48,6 +48,8 @@ class BIS_Sync {
     }
 
     public function ensure_course_tabs($course_id) {
+        if ($this->course_has_no_open_class($course_id)) return 0;
+
         $classes = $this->course_classes($course_id);
         if (!$classes) return 0;
 
@@ -225,6 +227,8 @@ class BIS_Sync {
         ));
 
         foreach ($course_ids as $course_id) {
+            if ($this->course_has_no_open_class($course_id)) continue;
+
             foreach ($this->course_classes($course_id) as $class) {
                 $key = $this->class_key($class);
                 $tasks[$course_id . '|' . $key] = array(
@@ -240,8 +244,12 @@ class BIS_Sync {
             $rows = $wpdb->get_results("SELECT DISTINCT curso_id, turma_id FROM {$orders} ORDER BY curso_id ASC, turma_id ASC");
             foreach ((array) $rows as $row) {
                 $course_id = absint($row->curso_id);
-                if (!$course_id) continue;
+                if (!$course_id || $this->course_has_no_open_class($course_id)) continue;
+
                 $key = $this->normalize_class_key($row->turma_id ?? '');
+                $class = $this->find_existing_class($course_id, $key);
+                if (!$class) continue;
+
                 $tasks[$course_id . '|' . $key] = array(
                     'course_id' => $course_id,
                     'class_key' => $key,
@@ -294,6 +302,8 @@ class BIS_Sync {
     }
 
     private function sync_class($course_id, $class_key, $force = false) {
+        if ($this->course_has_no_open_class($course_id)) return 'skipped';
+
         $course = get_post($course_id);
         if (!$course || $course->post_type !== 'curso') {
             return new WP_Error('bis_course_missing', 'Curso não encontrado.');
@@ -566,30 +576,48 @@ class BIS_Sync {
     }
 
     private function course_classes($course_id) {
+        if ($this->course_has_no_open_class($course_id)) return array();
+
         $classes = get_post_meta($course_id, '_curso_turmas', true);
         if (!is_array($classes) || !$classes) $classes = get_post_meta($course_id, '_turmas', true);
-        if (!is_array($classes)) $classes = array();
+        if (!is_array($classes) || !$classes) return array();
 
-        if (!$classes) {
-            return array(array(
-                'id' => 'sem-turma',
-                'nome' => 'Inscrições',
-                'data_inicio' => '',
-                'data_fim' => '',
-            ));
+        $valid = array();
+        foreach ($classes as $class) {
+            if (!is_array($class)) continue;
+
+            $id = trim((string) ($class['id'] ?? ''));
+            $name = trim((string) ($class['nome'] ?? ''));
+            $start = trim((string) ($class['data_inicio'] ?? ''));
+            $end = trim((string) ($class['data_fim'] ?? ''));
+
+            // Só considerar uma turma real. Registros completamente vazios não viram aba.
+            if ($id === '' && $name === '' && $start === '' && $end === '') continue;
+
+            $valid[] = $class;
         }
 
-        return array_values($classes);
+        return array_values($valid);
     }
 
-    private function find_class($course_id, $class_key) {
+    private function course_has_no_open_class($course_id) {
+        return get_post_meta($course_id, '_curso_sem_turma_aberta', true) === '1';
+    }
+
+    private function find_existing_class($course_id, $class_key) {
         foreach ($this->course_classes($course_id) as $class) {
             if ($this->class_key($class) === $class_key) return $class;
         }
+        return null;
+    }
+
+    private function find_class($course_id, $class_key) {
+        $class = $this->find_existing_class($course_id, $class_key);
+        if ($class) return $class;
 
         return array(
-            'id' => $class_key === 'sem-turma' ? '' : $class_key,
-            'nome' => $class_key === 'sem-turma' ? 'Inscrições' : $class_key,
+            'id' => $class_key,
+            'nome' => $class_key,
             'data_inicio' => '',
             'data_fim' => '',
         );
