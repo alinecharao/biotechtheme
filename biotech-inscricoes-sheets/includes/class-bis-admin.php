@@ -182,6 +182,7 @@ class BIS_Admin {
                 <div class="notice notice-success inline"><p><strong>Última reconciliação concluída:</strong>
                     <?php echo absint($queue['synced'] ?? 0); ?> abas sincronizadas,
                     <?php echo absint($queue['skipped'] ?? 0); ?> sem alterações,
+                    <?php echo absint($queue['legacy_removed'] ?? 0); ?> guias antigas vazias removidas,
                     <?php echo absint($queue['errors'] ?? 0); ?> erros.</p></div>
             <?php endif; ?>
             <?php if (is_wp_error($connection)): ?>
