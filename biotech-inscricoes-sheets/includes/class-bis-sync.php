@@ -2,644 +2,590 @@
 if (!defined('ABSPATH')) exit;
 
 class BIS_Sync {
-    const CONFIRMED = array('confirmed', 'completed');
     private $api;
-    private $batch_mode = false;
-    private $order_index_cache = array();
-    private $deferred_sorts = array();
+    private $excluded_statuses = array('cancelled', 'canceled', 'failed', 'refunded', 'expired');
 
     public function __construct(BIS_Sheets_API $api) {
         $this->api = $api;
+
         add_action('cursos_payment_completed', array($this, 'on_order_event'), 30, 2);
         add_action('cursos_payment_cancelled', array($this, 'on_order_event'), 30, 2);
         add_action('cursos_payment_status_changed', array($this, 'on_status_event'), 30, 3);
         add_action('cursos_order_created', array($this, 'on_order_event'), 30, 2);
+
+        add_action('save_post_curso', array($this, 'on_course_saved'), 60, 3);
         add_action('bis_reconcile_event', array($this, 'reconcile'));
-        add_action('bis_reconcile_queue_tick', array($this, 'process_reconcile_queue'));
+        add_action('bis_reconcile_queue_tick', array($this, 'process_queue'));
     }
 
-    public function on_order_event($order_id) { $this->sync_related_orders(absint($order_id)); }
-    public function on_status_event($order_id) { $this->sync_related_orders(absint($order_id)); }
-
-    private function sync_related_orders($order_id) {
-        if (!$order_id) return;
-        global $wpdb;
-        $orders = $wpdb->prefix . 'cursos_orders';
-        $token = $wpdb->get_var($wpdb->prepare("SELECT checkout_token FROM {$orders} WHERE id = %d", $order_id));
-        $ids = $token ? $wpdb->get_col($wpdb->prepare("SELECT id FROM {$orders} WHERE checkout_token = %s ORDER BY id ASC LIMIT 20", $token)) : array($order_id);
-        foreach ($ids as $id) $this->sync_order(absint($id));
+    public function on_order_event($order_id) {
+        return $this->sync_order(absint($order_id), true);
     }
+
+    public function on_status_event($order_id) {
+        return $this->sync_order(absint($order_id), true);
+    }
+
     public function on_course_saved($post_id, $post, $update) {
-        if (wp_is_post_revision($post_id) || $post->post_status === 'auto-draft') return;
+        if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) return;
+        if (!$post || $post->post_type !== 'curso' || $post->post_status === 'auto-draft') return;
         if (!current_user_can('edit_post', $post_id)) return;
-        $this->ensure_course_tabs($post_id);
-    }
 
-    public function ensure_course_tabs($course_id) {
-        $profile = $this->active_profile();
-        if (!$profile) return new WP_Error('bis_no_profile', 'Defina a planilha ativa nas configurações do plugin.');
-        $classes = get_post_meta($course_id, '_curso_turmas', true);
-        if (!is_array($classes) || !$classes) $classes = get_post_meta($course_id, '_turmas', true);
-        if (!is_array($classes) || !$classes) $classes = array(array('id' => 'sem-turma', 'nome' => 'Inscrições', 'data_inicio' => '', 'data_fim' => ''));
-        $created = 0;
-        foreach ($classes as $class) {
-            if ($this->class_is_past($class)) continue;
-            $result = $this->ensure_tab($course_id, $class, $profile);
-            if (!is_wp_error($result)) $created++;
-            else $this->log('error', $result->get_error_message(), 0, $course_id);
-        }
-        return $created;
+        $this->ensure_course_tabs(absint($post_id));
     }
 
     public function connection_check() {
         $profile = $this->active_profile();
         if (!$profile) return new WP_Error('bis_no_profile', 'Defina a planilha ativa nas configurações do plugin.');
+
         $metadata = $this->api->metadata($profile['spreadsheet_id']);
         if (is_wp_error($metadata)) return $metadata;
+
         return array(
             'profile' => $profile,
-            'title' => !empty($metadata['properties']['title']) ? $metadata['properties']['title'] : $profile['name'],
+            'title' => $metadata['properties']['title'] ?? $profile['name'],
         );
     }
 
-    public function sync_order($order_id) {
-        if (!$order_id) return new WP_Error('bis_order_id', 'Pedido inválido.');
-        global $wpdb;
-        $orders = $wpdb->prefix . 'cursos_orders';
-        $order = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$orders} WHERE id = %d", $order_id));
-        if (!$order) return new WP_Error('bis_order_missing', 'Pedido não encontrado.');
-        $class = $this->find_class($order->curso_id, $order->turma_id);
-        $tab = $this->find_tab($order->curso_id, $order->turma_id);
-        $profile = $tab ? $this->profile_for_tab($tab) : $this->active_profile();
-        if (!$profile) return new WP_Error('bis_no_profile', 'Defina a planilha ativa nas configurações do plugin.');
-        if ($tab) {
-            $renamed = $this->rename_tab_if_needed($tab, $class, $profile);
-            if (is_wp_error($renamed)) return $this->record_error($renamed, $order_id, $order->curso_id);
-            $tab = $renamed;
-        }
-        if (!$tab && in_array($order->status, self::CONFIRMED, true)) {
-            // Se existe inscrição confirmada, a turma precisa existir na planilha,
-            // mesmo que a data da turma já tenha passado.
-            $tab = $this->ensure_tab($order->curso_id, $class, $profile);
-        }
-        if (is_wp_error($tab)) return $tab;
-        if (!$tab) return 'ignored';
-        $index = $this->get_order_index($profile['spreadsheet_id'], $tab->sheet_title);
-        if (is_wp_error($index)) return $this->record_error($index, $order_id, $order->curso_id);
-        $row = isset($index[(string) $order_id]) ? intval($index[(string) $order_id]) : 0;
-        if (!in_array($order->status, self::CONFIRMED, true)) {
-            if ($row) {
-                $result = $this->api->delete_row($profile['spreadsheet_id'], $tab->sheet_id, $row);
-                if (is_wp_error($result)) return $this->record_error($result, $order_id, $order->curso_id);
-                $this->log('removed', 'Inscrição removida após mudança de status.', $order_id, $order->curso_id);
-            }
-            return true;
-        }
-        $result = $this->api->write_order($profile['spreadsheet_id'], $tab->sheet_title, $row, $this->order_values($order));
-        if (is_wp_error($result)) return $this->record_error($result, $order_id, $order->curso_id);
+    public function ensure_course_tabs($course_id) {
+        $classes = $this->course_classes($course_id);
+        if (!$classes) return 0;
 
-        if ($this->batch_mode) {
-            $cache_key = $this->index_cache_key($profile['spreadsheet_id'], $tab->sheet_title);
-            if (!$row) {
-                $rows = array_values($this->order_index_cache[$cache_key] ?? array());
-                $next_row = $rows ? (max(array_map('intval', $rows)) + 1) : 6;
-                $this->order_index_cache[$cache_key][(string) $order_id] = $next_row;
+        $count = 0;
+        foreach ($classes as $class) {
+            $key = $this->class_key($class);
+            $result = $this->sync_class($course_id, $key, true);
+            if (is_wp_error($result)) {
+                $this->record_error($result, 0, $course_id);
+                continue;
             }
-            $sort_key = $profile['spreadsheet_id'] . '|' . intval($tab->sheet_id);
-            $this->deferred_sorts[$sort_key] = array(
-                'spreadsheet_id' => $profile['spreadsheet_id'],
-                'sheet_id' => intval($tab->sheet_id),
-                'course_id' => absint($order->curso_id),
-            );
-        } else {
-            // Em sincronizações isoladas, ordenar imediatamente.
-            $sorted = $this->api->sort_tab($profile['spreadsheet_id'], $tab->sheet_id);
-            if (is_wp_error($sorted)) return $this->record_error($sorted, $order_id, $order->curso_id);
+            $count++;
         }
-
-        $this->log($row ? 'updated' : 'added', $row ? 'Inscrição atualizada.' : 'Inscrição adicionada.', $order_id, $order->curso_id);
-        return true;
+        return $count;
     }
 
-    /**
-     * A reconciliação completa é processada em segundo plano, em pequenos
-     * lotes. Nunca enviar centenas de gravações na mesma requisição PHP.
-     */
-    private function start_reconcile_queue() {
-        $current = get_option('bis_reconcile_queue', array());
-        if (is_array($current) && ($current['status'] ?? '') === 'running') {
-            return new WP_Error('bis_queue_running', 'Já existe uma reconciliação completa em andamento. Consulte o progresso na página.');
-        }
+    public function sync_order($order_id, $force = true) {
+        if (!$order_id) return new WP_Error('bis_order_id', 'Pedido inválido.');
+
         global $wpdb;
         $table = $wpdb->prefix . 'cursos_orders';
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table) {
-            return new WP_Error('bis_orders_table_missing', 'A tabela de pedidos não foi encontrada.');
-        }
-        $placeholders = implode(',', array_fill(0, count(self::CONFIRMED), '%s'));
-        $ids = array_map('intval', $wpdb->get_col($wpdb->prepare(
-            "SELECT id FROM {$table} WHERE status IN ({$placeholders}) ORDER BY id ASC",
-            self::CONFIRMED
-        )));
-        $tabs = array_map('intval', $wpdb->get_col(
-            "SELECT id FROM {$wpdb->prefix}bis_sheet_tabs ORDER BY id ASC"
-        ));
-        $state = array(
-            'status' => 'running', 'ids' => $ids, 'position' => 0,
-            'tabs' => $tabs, 'tab_position' => 0, 'sorts' => array(),
-            'synced' => 0, 'ignored' => 0, 'errors' => 0,
-            'blank_repaired' => 0, 'started_at' => time(),
-        );
-        update_option('bis_reconcile_queue', $state, false);
-        if (!wp_next_scheduled('bis_reconcile_queue_tick')) {
-            wp_schedule_single_event(time() + 10, 'bis_reconcile_queue_tick');
-        }
-        return array('queued' => true, 'checked' => count($ids));
+        $order = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$table} WHERE id = %d", $order_id));
+        if (!$order) return new WP_Error('bis_order_missing', 'Pedido não encontrado.');
+
+        $class_key = $this->normalize_class_key($order->turma_id ?? '');
+        return $this->sync_class(absint($order->curso_id), $class_key, $force);
     }
 
-    public function process_reconcile_queue() {
+    public function reconcile($manual = false) {
+        $queue = get_option('bis_reconcile_queue', array());
+        if (is_array($queue) && ($queue['status'] ?? '') === 'running') {
+            return array(
+                'queued' => true,
+                'checked' => count($queue['tasks'] ?? array()),
+                'already_running' => true,
+            );
+        }
+
+        return $this->start_queue((bool) $manual);
+    }
+
+    private function start_queue($force) {
+        $tasks = $this->collect_tasks();
+
+        $state = array(
+            'status' => 'running',
+            'force' => $force ? 1 : 0,
+            'tasks' => $tasks,
+            'position' => 0,
+            'synced' => 0,
+            'skipped' => 0,
+            'errors' => 0,
+            'started_at' => time(),
+        );
+
+        update_option('bis_reconcile_queue', $state, false);
+        $this->schedule_queue_tick(5);
+
+        return array(
+            'queued' => true,
+            'checked' => count($tasks),
+        );
+    }
+
+    public function process_queue() {
         if (!$this->acquire_lock()) {
-            $this->schedule_queue_tick();
+            $this->schedule_queue_tick(75);
             return;
         }
+
         $state = get_option('bis_reconcile_queue', array());
         if (!is_array($state) || ($state['status'] ?? '') !== 'running') {
             $this->release_lock();
             return;
         }
 
-        // No máximo 5 pedidos por execução. As gravações são adicionalmente
-        // protegidas pelo orçamento global na classe BIS_Sheets_API.
-        $this->batch_mode = true;
-        $this->order_index_cache = array();
-        $this->deferred_sorts = array();
         $processed = 0;
-        while ($processed < 5 && $state['position'] < count($state['ids'])) {
-            $id = absint($state['ids'][$state['position']]);
-            $result = $this->sync_order($id);
-            if (is_wp_error($result) && $result->get_error_code() === 'bis_rate_limited') break;
+        while ($processed < 2 && $state['position'] < count($state['tasks'])) {
+            $task = $state['tasks'][$state['position']];
+            $result = $this->sync_class(
+                absint($task['course_id']),
+                (string) $task['class_key'],
+                !empty($state['force'])
+            );
+
+            if (is_wp_error($result) && $result->get_error_code() === 'bis_rate_limited') {
+                break;
+            }
+
             $state['position']++;
             $processed++;
-            if (is_wp_error($result)) $state['errors']++;
-            elseif ($result === 'ignored') $state['ignored']++;
-            else $state['synced']++;
-        }
-        foreach ($this->deferred_sorts as $key => $sort) $state['sorts'][$key] = $sort;
-        $this->batch_mode = false;
-        $this->order_index_cache = array();
-        $this->deferred_sorts = array();
 
-        // Uma vez concluídos os pedidos, reparar até duas guias sem cabeçalho por ciclo.
-        if ($state['position'] >= count($state['ids'])) {
-            $repaired = 0;
-            while ($repaired < 2 && $state['tab_position'] < count($state['tabs'])) {
-                $tab_id = absint($state['tabs'][$state['tab_position']]);
-                $repair = $this->repair_blank_tabs($tab_id);
-                if (!empty($repair['paused'])) break;
-                $state['tab_position']++;
-                $repaired++;
-                $state['blank_repaired'] += $repair['repaired'];
-                $state['errors'] += $repair['errors'];
+            if (is_wp_error($result)) {
+                $state['errors']++;
+                $this->record_error($result, 0, absint($task['course_id']));
+            } elseif ($result === 'skipped') {
+                $state['skipped']++;
+            } else {
+                $state['synced']++;
             }
         }
 
-        // As ordenações são agendadas por guia e distribuídas entre execuções.
-        if ($state['position'] >= count($state['ids'])
-            && $state['tab_position'] >= count($state['tabs'])) {
-            $sorted = 0;
-            foreach ($state['sorts'] as $key => $sort) {
-                if ($sorted >= 3) break;
-                $result = $this->api->sort_tab($sort['spreadsheet_id'], $sort['sheet_id']);
-                if (is_wp_error($result) && $result->get_error_code() === 'bis_rate_limited') break;
-                if (is_wp_error($result)) {
-                    $state['errors']++;
-                    $this->record_error($result, 0, $sort['course_id']);
-                }
-                unset($state['sorts'][$key]);
-                $sorted++;
-            }
-        }
-        if ($state['position'] >= count($state['ids'])
-            && $state['tab_position'] >= count($state['tabs'])
-            && empty($state['sorts'])) {
+        if ($state['position'] >= count($state['tasks'])) {
             $state['status'] = 'completed';
             $state['completed_at'] = time();
-            $state['ids'] = array();
-            $state['tabs'] = array();
-            $this->log('completed', 'Reconciliação completa concluída: ' . $state['synced']
-                . ' inscrições sincronizadas, ' . $state['blank_repaired']
-                . ' cabeçalhos recuperados e ' . $state['errors'] . ' erros.');
+            $this->log(
+                'completed',
+                sprintf(
+                    'Reconciliação concluída: %d abas sincronizadas, %d sem alterações e %d erros.',
+                    absint($state['synced']),
+                    absint($state['skipped']),
+                    absint($state['errors'])
+                )
+            );
         }
 
         update_option('bis_reconcile_queue', $state, false);
         $this->release_lock();
-        if ($state['status'] === 'running') $this->schedule_queue_tick();
+
+        if ($state['status'] === 'running') $this->schedule_queue_tick(75);
     }
 
-    private function schedule_queue_tick() {
+    private function schedule_queue_tick($delay = 75) {
         if (!wp_next_scheduled('bis_reconcile_queue_tick')) {
-            wp_schedule_single_event(time() + 75, 'bis_reconcile_queue_tick');
+            wp_schedule_single_event(time() + max(5, absint($delay)), 'bis_reconcile_queue_tick');
         }
     }
 
-    public function reconcile($manual = false) {
-        if ($manual) return $this->start_reconcile_queue();
-        $queue = get_option('bis_reconcile_queue', array());
-        if (is_array($queue) && ($queue['status'] ?? '') === 'running') {
-            return array('checked' => 0, 'synced' => 0, 'ignored' => 0, 'errors' => 0, 'renamed' => 0, 'blank_removed' => 0, 'blank_repaired' => 0);
+    private function collect_tasks() {
+        $tasks = array();
+
+        $course_ids = get_posts(array(
+            'post_type' => 'curso',
+            'post_status' => array('publish', 'draft', 'private', 'future'),
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+            'orderby' => 'ID',
+            'order' => 'ASC',
+        ));
+
+        foreach ($course_ids as $course_id) {
+            foreach ($this->course_classes($course_id) as $class) {
+                $key = $this->class_key($class);
+                $tasks[$course_id . '|' . $key] = array(
+                    'course_id' => absint($course_id),
+                    'class_key' => $key,
+                );
+            }
         }
-        if (!$this->acquire_lock()) return new WP_Error('bis_sync_locked', 'Já existe uma sincronização em andamento. Aguarde alguns minutos e tente novamente.');
+
         global $wpdb;
         $orders = $wpdb->prefix . 'cursos_orders';
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $orders)) !== $orders) {
-            $this->release_lock();
-            return new WP_Error('bis_orders_table_missing', 'A tabela de pedidos não foi encontrada.');
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $orders)) === $orders) {
+            $rows = $wpdb->get_results("SELECT DISTINCT curso_id, turma_id FROM {$orders} ORDER BY curso_id ASC, turma_id ASC");
+            foreach ((array) $rows as $row) {
+                $course_id = absint($row->curso_id);
+                if (!$course_id) continue;
+                $key = $this->normalize_class_key($row->turma_id ?? '');
+                $tasks[$course_id . '|' . $key] = array(
+                    'course_id' => $course_id,
+                    'class_key' => $key,
+                );
+            }
         }
-        $connection = $this->connection_check();
-        if (is_wp_error($connection)) {
-            $this->log('error', $connection->get_error_message());
-            $this->release_lock();
-            return $connection;
-        }
-        $renamed = 0;
-        $rename_errors = 0;
-        $blank_removed = 0;
-        $blank_repaired = 0;
-        if ($manual) {
-            // Reconstruir cabeçalhos ausentes sem remover guias ou inscrições existentes.
-            $repaired = $this->repair_blank_tabs();
-            $blank_repaired = $repaired['repaired'];
-            $rename_errors += $repaired['errors'];
 
-            $rename_result = $this->rename_existing_tabs();
-            $renamed = $rename_result['renamed'];
-            $rename_errors += $rename_result['errors'];
+        return array_values($tasks);
+    }
+
+    private function sync_class($course_id, $class_key, $force = false) {
+        $course = get_post($course_id);
+        if (!$course || $course->post_type !== 'curso') {
+            return new WP_Error('bis_course_missing', 'Curso não encontrado.');
         }
-        $cursor = absint(get_option('bis_reconcile_cursor', 0));
-        // Mantém a reconciliação automática bem abaixo da cota de leituras/minuto do Sheets.
-        $limit = 20;
-        if ($manual) {
-            // Reconciliação manual é completa: revisa todos os pedidos confirmados,
-            // do mais antigo ao mais recente, para recuperar inscrições ausentes.
-            $placeholders = implode(',', array_fill(0, count(self::CONFIRMED), '%s'));
-            $ids = $wpdb->get_col($wpdb->prepare(
-                "SELECT id FROM {$orders} WHERE status IN ({$placeholders}) ORDER BY id ASC",
-                self::CONFIRMED
-            ));
-        } else {
-            $ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM {$orders} WHERE id > %d ORDER BY id ASC LIMIT %d", $cursor, $limit));
+
+        $class = $this->find_class($course_id, $class_key);
+        $profile = $this->profile_for_course_class($course_id, $class_key);
+        if (!$profile) return new WP_Error('bis_no_profile', 'Defina a planilha ativa nas configurações do plugin.');
+
+        $tab_info = $this->ensure_tab($course_id, $class, $profile);
+        if (is_wp_error($tab_info)) return $tab_info;
+
+        $tab = $tab_info['tab'];
+        $rows = $this->registration_rows($course_id, $class_key);
+        if (is_wp_error($rows)) return $rows;
+
+        $hash = md5(wp_json_encode(array(
+            'course' => $course->post_title,
+            'class' => $class,
+            'rows' => $rows,
+        )));
+
+        $hash_key = $this->hash_option_key($course_id, $class_key, $profile['spreadsheet_id']);
+        if (!$force && empty($tab_info['created']) && get_option($hash_key) === $hash) {
+            return 'skipped';
         }
-        if (!$manual && !$ids && $cursor) {
-            update_option('bis_reconcile_cursor', 0, false);
-            $ids = $wpdb->get_col($wpdb->prepare("SELECT id FROM {$orders} ORDER BY id ASC LIMIT %d", $limit));
-        }
-        $result = array(
-            'checked' => count($ids),
-            'synced' => 0,
-            'ignored' => 0,
-            'errors' => $rename_errors,
-            'renamed' => $renamed,
-            'blank_removed' => $blank_removed,
-            'blank_repaired' => $blank_repaired,
+
+        $result = $this->api->write_tab(
+            $profile['spreadsheet_id'],
+            intval($tab->sheet_id),
+            $tab->sheet_title,
+            $course->post_title,
+            $this->class_name($class, $class_key),
+            $this->class_date($class),
+            $rows,
+            $force || !empty($tab_info['created']) || !empty($tab_info['renamed'])
         );
-        if ($manual) {
-            // Na reconciliação completa, cada guia é lida uma única vez e ordenada
-            // apenas ao final, em vez de fazer uma leitura + ordenação por pedido.
-            $this->batch_mode = true;
-            $this->order_index_cache = array();
-            $this->deferred_sorts = array();
-        }
 
-        $last_processed_id = $cursor;
-        foreach ($ids as $id) {
-            $order_id = absint($id);
-            $sync = $this->sync_order($order_id);
-            if (is_wp_error($sync) && $sync->get_error_code() === 'bis_rate_limited') break;
-            $last_processed_id = $order_id;
-            if (is_wp_error($sync)) {
-                $result['errors']++;
-            } elseif ($sync === 'ignored') {
-                $result['ignored']++;
-            } else {
-                $result['synced']++;
-            }
-        }
-        if ($manual && $this->deferred_sorts) {
-            foreach ($this->deferred_sorts as $sort) {
-                $sorted = $this->api->sort_tab($sort['spreadsheet_id'], $sort['sheet_id']);
-                if (is_wp_error($sorted)) {
-                    $result['errors']++;
-                    $this->log('error', 'Não foi possível ordenar a guia ao final da reconciliação: ' . $sorted->get_error_message(), 0, $sort['course_id']);
-                }
-            }
-        }
+        if (is_wp_error($result)) return $result;
 
-        $this->batch_mode = false;
-        $this->order_index_cache = array();
-        $this->deferred_sorts = array();
-
-        if (!$manual && $ids && $last_processed_id !== $cursor) update_option('bis_reconcile_cursor', $last_processed_id, false);
-        $this->release_lock();
-        return $result;
+        update_option($hash_key, $hash, false);
+        $this->log('synced', 'Aba ' . $tab->sheet_title . ' sincronizada.', 0, $course_id);
+        return true;
     }
 
     private function ensure_tab($course_id, $class, $profile) {
-        $class_id = $this->class_id($class);
-        $existing = $this->find_tab($course_id, $class_id);
-        if ($existing) return $existing;
-        $metadata = $this->api->metadata($profile['spreadsheet_id']);
-        if (is_wp_error($metadata)) return $metadata;
-        $title = $this->tab_title($course_id, $class);
-        $sheet = null;
-        foreach ((array) (isset($metadata['sheets']) ? $metadata['sheets'] : array()) as $candidate) {
-            if (!isset($candidate['properties']['title']) || $candidate['properties']['title'] !== $title) continue;
-            global $wpdb;
-            $mapped = $wpdb->get_var($wpdb->prepare(
-                "SELECT id FROM {$wpdb->prefix}bis_sheet_tabs WHERE spreadsheet_id = %s AND sheet_id = %d LIMIT 1",
-                $profile['spreadsheet_id'],
-                intval($candidate['properties']['sheetId'])
-            ));
-            if (!$mapped) $sheet = $candidate['properties'];
-        }
-        if (!$sheet) {
-            $occupied = array();
-            foreach ((array) (isset($metadata['sheets']) ? $metadata['sheets'] : array()) as $candidate) {
-                if (!empty($candidate['properties']['title'])) $occupied[$candidate['properties']['title']] = true;
+        $class_key = $this->class_key($class);
+        $tab = $this->find_tab($course_id, $class_key);
+        $created = false;
+        $renamed = false;
+
+        if ($tab) {
+            if (!preg_match('/^curso_\d+$/i', (string) $tab->sheet_title)) {
+                $new_title = $this->next_tab_title($profile['spreadsheet_id']);
+                $result = $this->api->rename_tab($profile['spreadsheet_id'], intval($tab->sheet_id), $new_title);
+                if (is_wp_error($result)) return $result;
+
+                global $wpdb;
+                $wpdb->update(
+                    $wpdb->prefix . 'bis_sheet_tabs',
+                    array('sheet_title' => $new_title, 'updated_at' => current_time('mysql')),
+                    array('id' => absint($tab->id)),
+                    array('%s', '%s'),
+                    array('%d')
+                );
+                $tab->sheet_title = $new_title;
+                $renamed = true;
             }
-            if (isset($occupied[$title])) {
-                $suffix = $this->safe_title_part($class_id);
-                $title = mb_substr($title . ' - ' . ($suffix ?: $course_id), 0, 100);
-                $counter = 2;
-                while (isset($occupied[$title])) {
-                    $title = mb_substr($this->tab_title($course_id, $class), 0, 94) . ' - ' . $counter;
-                    $counter++;
-                }
-            }
+
+            return array('tab' => $tab, 'created' => false, 'renamed' => $renamed);
         }
-        $created_now = false;
-        if (!$sheet) {
-            $sheet = $this->api->create_tab($profile['spreadsheet_id'], $title);
-            $created_now = true;
-        }
+
+        $title = $this->next_tab_title($profile['spreadsheet_id']);
+        $sheet = $this->api->create_tab($profile['spreadsheet_id'], $title);
         if (is_wp_error($sheet)) return $sheet;
-
-        $setup = $this->api->setup_tab(
-            $profile['spreadsheet_id'],
-            $sheet['sheetId'],
-            $sheet['title'],
-            get_the_title($course_id),
-            isset($class['nome']) ? $class['nome'] : $class_id,
-            $this->class_date($class)
-        );
-
-        if (is_wp_error($setup)) {
-            // Evita deixar guias vazias quando a estrutura inicial falha.
-            if ($created_now) {
-                $deleted = $this->api->delete_tab($profile['spreadsheet_id'], $sheet['sheetId']);
-                if (is_wp_error($deleted)) {
-                    $this->log('error', 'A guia ' . $sheet['title'] . ' ficou vazia após falha de inicialização. Não foi possível removê-la: ' . $deleted->get_error_message(), 0, $course_id);
-                }
-            }
-            return $setup;
-        }
 
         global $wpdb;
         $table = $wpdb->prefix . 'bis_sheet_tabs';
-        $wpdb->replace(
+        $inserted = $wpdb->replace(
             $table,
             array(
                 'course_id' => $course_id,
-                'class_key' => $class_id,
+                'class_key' => $class_key,
                 'profile_key' => $profile['key'],
                 'spreadsheet_id' => $profile['spreadsheet_id'],
                 'sheet_id' => intval($sheet['sheetId']),
-                'sheet_title' => $sheet['title'],
+                'sheet_title' => $title,
                 'updated_at' => current_time('mysql'),
             ),
             array('%d', '%s', '%s', '%s', '%d', '%s', '%s')
         );
 
-        return $this->find_tab($course_id, $class_id);
-    }
-
-    private function repair_blank_tabs($only_tab_id = 0) {
-        global $wpdb;
-        $tabs = $only_tab_id
-            ? $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs WHERE id = %d", $only_tab_id))
-            : $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs ORDER BY spreadsheet_id ASC, id ASC");
-        $result = array('repaired' => 0, 'errors' => 0, 'paused' => false);
-
-        foreach ((array) $tabs as $tab) {
-            $has_values = $this->api->tab_has_values($tab->spreadsheet_id, $tab->sheet_title);
-            if (is_wp_error($has_values)) {
-                if ($has_values->get_error_code() === 'bis_rate_limited') {
-                    $result['paused'] = true;
-                    break;
-                }
-                $result['errors']++;
-                $this->record_error($has_values, 0, absint($tab->course_id));
-                continue;
-            }
-            if ($has_values) continue;
-
-            $class = $this->find_class(absint($tab->course_id), $tab->class_key);
-            $setup = $this->api->setup_tab(
-                $tab->spreadsheet_id,
-                intval($tab->sheet_id),
-                $tab->sheet_title,
-                get_the_title(absint($tab->course_id)),
-                isset($class['nome']) ? $class['nome'] : $tab->class_key,
-                $this->class_date($class)
-            );
-            if (is_wp_error($setup)) {
-                if ($setup->get_error_code() === 'bis_rate_limited') {
-                    $result['paused'] = true;
-                    break;
-                }
-                $result['errors']++;
-                $this->record_error($setup, 0, absint($tab->course_id));
-                continue;
-            }
-
-            $result['repaired']++;
-            $this->log('repaired', 'Cabeçalho recuperado na guia ' . $tab->sheet_title . '.', 0, absint($tab->course_id));
+        if ($inserted === false) {
+            $this->api->delete_tab($profile['spreadsheet_id'], intval($sheet['sheetId']));
+            return new WP_Error('bis_mapping_failed', 'Não foi possível registrar a nova aba no WordPress.');
         }
 
-        return $result;
+        $tab = $this->find_tab($course_id, $class_key);
+        if (!$tab) return new WP_Error('bis_mapping_missing', 'A aba foi criada, mas o mapeamento não pôde ser recuperado.');
+
+        $created = true;
+        return array('tab' => $tab, 'created' => $created, 'renamed' => false);
     }
 
-    private function rename_existing_tabs() {
-        global $wpdb;
-        $tabs = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs ORDER BY spreadsheet_id ASC, id ASC");
-        $result = array('renamed' => 0, 'errors' => 0);
-        foreach ((array) $tabs as $tab) {
-            $class = $this->find_class(absint($tab->course_id), $tab->class_key);
-            $profile = $this->profile_for_tab($tab);
-            $previous_title = $tab->sheet_title;
-            $renamed = $this->rename_tab_if_needed($tab, $class, $profile);
-            if (is_wp_error($renamed)) {
-                $result['errors']++;
-                $this->log('error', 'Não foi possível renomear a guia: ' . $renamed->get_error_message(), 0, absint($tab->course_id));
-                continue;
-            }
-            if ($renamed->sheet_title !== $previous_title) {
-                    $result['renamed']++;
-                    $this->log('renamed', 'Guia renomeada para ' . $renamed->sheet_title . '.', 0, absint($tab->course_id));
-            }
-            $formatted = $this->api->format_tab($profile['spreadsheet_id'], $renamed->sheet_id);
-            if (is_wp_error($formatted)) {
-                $result['errors']++;
-                $this->log('error', 'Não foi possível formatar a guia: ' . $formatted->get_error_message(), 0, absint($tab->course_id));
-            }
-        }
-        return $result;
-    }
+    private function next_tab_title($spreadsheet_id) {
+        $metadata = $this->api->metadata($spreadsheet_id, true);
+        if (is_wp_error($metadata)) return 'curso_' . time();
 
-    private function rename_tab_if_needed($tab, $class, $profile) {
-        $preferred = $this->tab_title(absint($tab->course_id), $class);
-        if ($tab->sheet_title === $preferred) return $tab;
-        $metadata = $this->api->metadata($profile['spreadsheet_id']);
-        if (is_wp_error($metadata)) return $metadata;
-        $occupied = array();
+        $max = 0;
         foreach ((array) ($metadata['sheets'] ?? array()) as $sheet) {
-            if (empty($sheet['properties']['title'])) continue;
-            $sheet_id = intval($sheet['properties']['sheetId'] ?? 0);
-            if ($sheet_id !== intval($tab->sheet_id)) $occupied[$sheet['properties']['title']] = true;
-        }
-        $target = $preferred;
-        if (isset($occupied[$target])) {
-            $suffix = $this->safe_title_part($this->class_id($class));
-            $target = mb_substr($preferred . ' - ' . ($suffix ?: absint($tab->course_id)), 0, 100);
-            $counter = 2;
-            while (isset($occupied[$target])) {
-                $target = mb_substr($preferred, 0, 94) . ' - ' . $counter;
-                $counter++;
+            $title = (string) ($sheet['properties']['title'] ?? '');
+            if (preg_match('/^curso_(\d+)$/i', $title, $match)) {
+                $max = max($max, intval($match[1]));
             }
         }
-        if ($tab->sheet_title === $target) return $tab;
-        $renamed = $this->api->rename_tab($profile['spreadsheet_id'], $tab->sheet_id, $target);
-        if (is_wp_error($renamed)) return $renamed;
+        return 'curso_' . ($max + 1);
+    }
+
+    private function registration_rows($course_id, $class_key) {
         global $wpdb;
-        $wpdb->update(
-            $wpdb->prefix . 'bis_sheet_tabs',
-            array('sheet_title' => $target, 'updated_at' => current_time('mysql')),
-            array('id' => absint($tab->id)),
-            array('%s', '%s'),
-            array('%d')
+        $table = $wpdb->prefix . 'cursos_orders';
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table) return array();
+
+        $class = $this->find_class($course_id, $class_key);
+        $raw_id = trim((string) ($class['id'] ?? ''));
+
+        if ($raw_id !== '') {
+            $orders = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$table} WHERE curso_id = %d AND turma_id = %s ORDER BY id ASC",
+                $course_id,
+                $raw_id
+            ));
+        } elseif ($class_key === 'sem-turma') {
+            $orders = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$table} WHERE curso_id = %d AND (turma_id IS NULL OR turma_id = '') ORDER BY id ASC",
+                $course_id
+            ));
+        } else {
+            $orders = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$table} WHERE curso_id = %d AND turma_id = %s ORDER BY id ASC",
+                $course_id,
+                $class_key
+            ));
+        }
+
+        $rows = array();
+        foreach ((array) $orders as $order) {
+            $status = strtolower(trim((string) ($order->status ?? '')));
+            if (in_array($status, $this->excluded_statuses, true)) continue;
+            $rows[] = $this->order_values($order);
+        }
+
+        usort($rows, function($a, $b) {
+            $name_a = function_exists('remove_accents') ? remove_accents((string) ($a[1] ?? '')) : (string) ($a[1] ?? '');
+            $name_b = function_exists('remove_accents') ? remove_accents((string) ($b[1] ?? '')) : (string) ($b[1] ?? '');
+            return strnatcasecmp($name_a, $name_b);
+        });
+
+        return $rows;
+    }
+
+    private function order_values($order) {
+        $proof = $this->proof_value($order);
+        $referral_source = $this->prop($order, 'referral_source');
+        $referral_detail = $this->prop($order, 'referral_detail');
+        $referral = trim($referral_source . ($referral_detail ? ' - ' . $referral_detail : ''));
+
+        $professional_type = $this->prop($order, 'professional_type');
+        $is_student = intval($this->prop($order, 'is_student')) === 1;
+        $type = $professional_type ?: ($is_student ? 'Estudante' : 'Profissional');
+
+        $methods = array(
+            'pix' => 'PIX',
+            'credit_card' => 'Cartão de crédito',
+            'boleto' => 'Boleto',
         );
-        $tab->sheet_title = $target;
-        return $tab;
+        $method = $this->prop($order, 'payment_method');
+        $method_label = $methods[$method] ?? $method;
+
+        return array(
+            $this->format_datetime($this->prop($order, 'created_at')),
+            $this->prop($order, 'customer_name'),
+            $this->prop($order, 'customer_email'),
+            $this->prop($order, 'customer_cpf'),
+            $this->prop($order, 'customer_phone'),
+            $this->prop($order, 'customer_gender'),
+            $referral,
+            $type,
+            $proof,
+            $method_label,
+            round((float) $this->prop($order, 'amount'), 2),
+            $this->prop($order, 'coupon_code'),
+            $this->status_label($this->prop($order, 'status')),
+            (string) absint($order->id ?? 0),
+        );
+    }
+
+    private function proof_value($order) {
+        global $wpdb;
+
+        $proof = $this->prop($order, 'crmv');
+        $doc_table = $wpdb->prefix . 'cursos_student_documents';
+        $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $doc_table)) === $doc_table;
+
+        if (!$exists) return $proof;
+
+        $document = null;
+        $doc_id = absint($this->prop($order, 'diploma_document_id'));
+
+        if ($doc_id) {
+            $document = $wpdb->get_row($wpdb->prepare(
+                "SELECT id, file_path, file_url FROM {$doc_table} WHERE id = %d",
+                $doc_id
+            ));
+        }
+
+        if (!$document && !empty($order->id)) {
+            $document = $wpdb->get_row($wpdb->prepare(
+                "SELECT id, file_path, file_url FROM {$doc_table} WHERE order_id = %d ORDER BY id DESC LIMIT 1",
+                absint($order->id)
+            ));
+        }
+
+        if (!$document && $this->prop($order, 'customer_email')) {
+            $document = $wpdb->get_row($wpdb->prepare(
+                "SELECT id, file_path, file_url FROM {$doc_table} WHERE customer_email = %s ORDER BY id DESC LIMIT 1",
+                $this->prop($order, 'customer_email')
+            ));
+        }
+
+        if ($document && !empty($document->file_path) && function_exists('bis_document_view_url')) {
+            return bis_document_view_url($document->id, $document->file_path);
+        }
+
+        return $proof;
+    }
+
+    private function course_classes($course_id) {
+        $classes = get_post_meta($course_id, '_curso_turmas', true);
+        if (!is_array($classes) || !$classes) $classes = get_post_meta($course_id, '_turmas', true);
+        if (!is_array($classes)) $classes = array();
+
+        if (!$classes) {
+            return array(array(
+                'id' => '',
+                'nome' => 'Inscrições',
+                'data_inicio' => '',
+                'data_fim' => '',
+            ));
+        }
+
+        return array_values($classes);
+    }
+
+    private function find_class($course_id, $class_key) {
+        foreach ($this->course_classes($course_id) as $class) {
+            if ($this->class_key($class) === $class_key) return $class;
+        }
+
+        return array(
+            'id' => $class_key === 'sem-turma' ? '' : $class_key,
+            'nome' => $class_key === 'sem-turma' ? 'Inscrições' : $class_key,
+            'data_inicio' => '',
+            'data_fim' => '',
+        );
+    }
+
+    private function class_key($class) {
+        $id = trim((string) ($class['id'] ?? ''));
+        if ($id !== '') return sanitize_text_field($id);
+
+        $seed = trim((string) ($class['nome'] ?? '')) . '|' .
+                trim((string) ($class['data_inicio'] ?? '')) . '|' .
+                trim((string) ($class['data_fim'] ?? ''));
+
+        if (trim(str_replace('|', '', $seed)) !== '') {
+            return 'turma-' . substr(md5($seed), 0, 12);
+        }
+        return 'sem-turma';
+    }
+
+    private function normalize_class_key($value) {
+        $value = trim((string) $value);
+        return $value !== '' ? sanitize_text_field($value) : 'sem-turma';
+    }
+
+    private function class_name($class, $fallback) {
+        $name = trim((string) ($class['nome'] ?? ''));
+        return $name !== '' ? $name : ($fallback === 'sem-turma' ? 'Inscrições' : $fallback);
+    }
+
+    private function class_date($class) {
+        $start = $this->format_date($class['data_inicio'] ?? '');
+        $end = $this->format_date($class['data_fim'] ?? '');
+
+        if ($start && $end && $start !== $end) return $start . ' a ' . $end;
+        return $start ?: $end;
+    }
+
+    private function format_date($value) {
+        $value = trim((string) $value);
+        if ($value === '') return '';
+
+        $timestamp = strtotime($value);
+        return $timestamp ? date_i18n('d/m/Y', $timestamp) : $value;
+    }
+
+    private function format_datetime($value) {
+        $timestamp = strtotime((string) $value);
+        return $timestamp ? date_i18n('d/m/Y H:i', $timestamp) : (string) $value;
+    }
+
+    private function status_label($status) {
+        $labels = array(
+            'pending' => 'Pendente',
+            'processing' => 'Processando',
+            'paid' => 'Pago',
+            'completed' => 'Concluído',
+            'confirmed' => 'Confirmado',
+        );
+        $key = strtolower(trim((string) $status));
+        return $labels[$key] ?? (string) $status;
+    }
+
+    private function prop($object, $property) {
+        return (is_object($object) && isset($object->{$property})) ? (string) $object->{$property} : '';
     }
 
     private function active_profile() {
         $profiles = (array) get_option('bis_sheet_profiles', array());
         $key = get_option('bis_active_sheet_profile', '');
+
         if ((!$key || empty($profiles[$key])) && $profiles) {
             $keys = array_keys($profiles);
             $key = reset($keys);
         }
+
         if (!$key || empty($profiles[$key]['spreadsheet_id'])) return null;
-        return array('key' => $key, 'name' => $profiles[$key]['name'], 'spreadsheet_id' => $profiles[$key]['spreadsheet_id']);
-    }
 
-    private function profile_for_tab($tab) {
-        $profiles = (array) get_option('bis_sheet_profiles', array());
-        $name = !empty($profiles[$tab->profile_key]['name']) ? $profiles[$tab->profile_key]['name'] : 'Planilha anterior';
-        return array('key' => $tab->profile_key, 'name' => $name, 'spreadsheet_id' => $tab->spreadsheet_id);
-    }
-
-    private function find_tab($course_id, $class_id) {
-        global $wpdb;
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}bis_sheet_tabs WHERE course_id = %d AND class_key = %s ORDER BY id ASC LIMIT 1", $course_id, $class_id ?: 'sem-turma'));
-    }
-
-    private function find_class($course_id, $class_id) {
-        $classes = get_post_meta($course_id, '_curso_turmas', true);
-        if (!is_array($classes) || !$classes) $classes = get_post_meta($course_id, '_turmas', true);
-        foreach ((array) $classes as $class) if ($this->class_id($class) === ($class_id ?: 'sem-turma')) return $class;
-        return array('id' => $class_id ?: 'sem-turma', 'nome' => $class_id ?: 'Inscrições', 'data_inicio' => '', 'data_fim' => '');
-    }
-
-    private function class_id($class) {
-        if (!empty($class['id'])) return sanitize_text_field($class['id']);
-
-        // Turmas antigas podem não ter ID preenchido. Use nome/data como chave estável
-        // para impedir que várias turmas diferentes colidam em "sem-turma".
-        $seed = trim((string) ($class['nome'] ?? '')) . '|' .
-                trim((string) ($class['data_inicio'] ?? '')) . '|' .
-                trim((string) ($class['data_fim'] ?? ''));
-        if (trim(str_replace('|', '', $seed)) !== '') return 'turma-' . substr(md5($seed), 0, 12);
-
-        return 'sem-turma';
-    }
-    private function class_is_past($class) {
-        $date = !empty($class['data_fim']) ? $class['data_fim'] : (!empty($class['data_inicio']) ? $class['data_inicio'] : '');
-        return $date && strtotime($date . ' 23:59:59') < current_time('timestamp');
-    }
-    private function class_date($class) {
-        $start = !empty($class['data_inicio']) ? date_i18n('d/m/Y', strtotime($class['data_inicio'])) : '';
-        $end = !empty($class['data_fim']) ? date_i18n('d/m/Y', strtotime($class['data_fim'])) : '';
-        return $start && $end && $start !== $end ? $start . ' a ' . $end : ($start ?: $end);
-    }
-    private function tab_title($course_id, $class) {
-        $date = !empty($class['data_inicio']) ? $this->date_timestamp($class['data_inicio']) : 0;
-        if ($date) return 'Curso ' . wp_date('d/m', $date);
-        return mb_substr('Curso ' . $this->safe_title_part($this->class_id($class) ?: $course_id), 0, 100);
-    }
-
-    private function date_timestamp($date) {
-        $date = trim((string) $date);
-        if (!$date) return 0;
-        $timezone = wp_timezone();
-        foreach (array('!Y-m-d', '!d/m/Y') as $format) {
-            $parsed = DateTimeImmutable::createFromFormat($format, $date, $timezone);
-            $errors = DateTimeImmutable::getLastErrors();
-            if ($parsed && ($errors === false || (!$errors['warning_count'] && !$errors['error_count']))) return $parsed->getTimestamp();
-        }
-        $timestamp = strtotime($date);
-        return $timestamp ? $timestamp : 0;
-    }
-    private function safe_title_part($value) {
-        return trim(preg_replace('/[\\\/\?\*\[\]:]/', '-', sanitize_text_field((string) $value)));
-    }
-
-    private function order_values($order) {
-        global $wpdb;
-        $proof = $order->crmv;
-        $document = null;
-        if (!$proof) {
-            $doc_id = !empty($order->diploma_document_id) ? absint($order->diploma_document_id) : 0;
-            if ($doc_id) $document = $wpdb->get_row($wpdb->prepare("SELECT id, file_path, file_url FROM {$wpdb->prefix}cursos_student_documents WHERE id = %d", $doc_id));
-            if (!$document) $document = $wpdb->get_row($wpdb->prepare("SELECT id, file_path, file_url FROM {$wpdb->prefix}cursos_student_documents WHERE order_id = %d ORDER BY id DESC LIMIT 1", $order->id));
-            if (!$document && !empty($order->customer_email)) $document = $wpdb->get_row($wpdb->prepare("SELECT id, file_path, file_url FROM {$wpdb->prefix}cursos_student_documents WHERE customer_email = %s ORDER BY id DESC LIMIT 1", $order->customer_email));
-        } elseif (filter_var($proof, FILTER_VALIDATE_URL)) {
-            $document = $wpdb->get_row($wpdb->prepare("SELECT id, file_path, file_url FROM {$wpdb->prefix}cursos_student_documents WHERE file_url = %s ORDER BY id DESC LIMIT 1", $proof));
-        }
-        if ($document) $proof = bis_document_view_url($document->id, $document->file_path);
-        $referral = trim($order->referral_source . (!empty($order->referral_detail) ? ' - ' . $order->referral_detail : ''));
-        $methods = array('pix' => 'PIX', 'credit_card' => 'Cartão de crédito', 'boleto' => 'Boleto');
-        $professional = $order->professional_type === 'student' ? 'Estudante' : ($order->professional_type ?: 'Profissional');
         return array(
-            date_i18n('d/m/Y H:i', strtotime($order->created_at)), $order->customer_name, $order->customer_email, $order->customer_cpf,
-            $order->customer_phone, $order->customer_gender, $referral, $professional, $proof ?: '',
-            isset($methods[$order->payment_method]) ? $methods[$order->payment_method] : $order->payment_method,
-            round((float) $order->amount, 2), $order->coupon_code ?: '', (string) $order->id,
+            'key' => $key,
+            'name' => $profiles[$key]['name'] ?? 'Planilha',
+            'spreadsheet_id' => $profiles[$key]['spreadsheet_id'],
         );
     }
 
-    private function index_cache_key($spreadsheet_id, $title) {
-        return (string) $spreadsheet_id . '|' . (string) $title;
+    private function profile_for_course_class($course_id, $class_key) {
+        $tab = $this->find_tab($course_id, $class_key);
+        if (!$tab) return $this->active_profile();
+
+        $profiles = (array) get_option('bis_sheet_profiles', array());
+        return array(
+            'key' => $tab->profile_key,
+            'name' => $profiles[$tab->profile_key]['name'] ?? 'Planilha',
+            'spreadsheet_id' => $tab->spreadsheet_id,
+        );
     }
 
-    private function get_order_index($spreadsheet_id, $title) {
-        if (!$this->batch_mode) return $this->api->order_index($spreadsheet_id, $title);
+    private function find_tab($course_id, $class_key) {
+        global $wpdb;
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}bis_sheet_tabs WHERE course_id = %d AND class_key = %s ORDER BY id ASC LIMIT 1",
+            $course_id,
+            $class_key
+        ));
+    }
 
-        $key = $this->index_cache_key($spreadsheet_id, $title);
-        if (!array_key_exists($key, $this->order_index_cache)) {
-            $index = $this->api->order_index($spreadsheet_id, $title);
-            if (is_wp_error($index)) return $index;
-            $this->order_index_cache[$key] = $index;
-        }
-        return $this->order_index_cache[$key];
+    private function hash_option_key($course_id, $class_key, $spreadsheet_id) {
+        return 'bis_hash_' . md5($course_id . '|' . $class_key . '|' . $spreadsheet_id);
     }
 
     private function acquire_lock() {
@@ -648,10 +594,28 @@ class BIS_Sync {
         delete_option('bis_sync_lock');
         return add_option('bis_sync_lock', time() + 5 * MINUTE_IN_SECONDS, '', false);
     }
-    private function release_lock() { delete_option('bis_sync_lock'); }
-    private function record_error($error, $order_id, $course_id) { $this->log('error', $error->get_error_message(), $order_id, $course_id); return $error; }
+
+    private function release_lock() {
+        delete_option('bis_sync_lock');
+    }
+
+    private function record_error($error, $order_id, $course_id) {
+        $this->log('error', $error->get_error_message(), $order_id, $course_id);
+        return $error;
+    }
+
     private function log($status, $message, $order_id = 0, $course_id = 0) {
         global $wpdb;
-        $wpdb->insert($wpdb->prefix . 'bis_sync_log', array('order_id' => $order_id ?: null, 'course_id' => $course_id ?: null, 'status' => $status, 'message' => $message, 'created_at' => current_time('mysql')), array('%d', '%d', '%s', '%s', '%s'));
+        $wpdb->insert(
+            $wpdb->prefix . 'bis_sync_log',
+            array(
+                'order_id' => $order_id ?: null,
+                'course_id' => $course_id ?: null,
+                'status' => $status,
+                'message' => $message,
+                'created_at' => current_time('mysql'),
+            ),
+            array('%d', '%d', '%s', '%s', '%s')
+        );
     }
 }
