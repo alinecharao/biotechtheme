@@ -3,14 +3,14 @@
  * Plugin Name: Biotech Inscrições no Sheets
  * Plugin URI: https://fazendaescolabiotech.com.br
  * Description: Sincroniza inscrições dos cursos com uma aba por turma no Google Sheets, em ordem alfabética.
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: Fazenda Escola Biotech
  * Requires at least: 5.8
  * Requires PHP: 7.4
  */
 if (!defined('ABSPATH')) exit;
 
-define('BIS_VERSION', '2.0.0');
+define('BIS_VERSION', '2.0.1');
 define('BIS_PATH', plugin_dir_path(__FILE__));
 
 require_once BIS_PATH . 'includes/class-bis-google-auth.php';
