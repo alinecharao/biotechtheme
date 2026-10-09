@@ -465,7 +465,23 @@ class BIS_Sync {
 
         $professional_type = $this->prop($order, 'professional_type');
         $is_student = intval($this->prop($order, 'is_student')) === 1;
-        $type = $professional_type ?: ($is_student ? 'Estudante' : 'Profissional');
+        $type_labels = array(
+            'veterinarian' => 'Médico Veterinário',
+            'student' => 'Estudante',
+            'general' => 'Geral',
+        );
+        $type = $type_labels[$professional_type] ?? ($is_student ? 'Estudante' : ($professional_type ?: 'Profissional'));
+
+        $referral_labels = array(
+            'google' => 'Google',
+            'instagram' => 'Instagram',
+            'facebook' => 'Facebook',
+            'indicacao' => 'Indicação',
+            'outro' => 'Outro',
+        );
+        if ($referral_source && isset($referral_labels[$referral_source])) {
+            $referral = $referral_labels[$referral_source] . ($referral_detail ? ' - ' . $referral_detail : '');
+        }
 
         $methods = array(
             'pix' => 'PIX',
