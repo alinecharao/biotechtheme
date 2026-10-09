@@ -271,6 +271,7 @@ class BIS_Sync {
         if ($tab) {
             if (!preg_match('/^curso_\d+$/i', (string) $tab->sheet_title)) {
                 $new_title = $this->next_tab_title($profile['spreadsheet_id']);
+                if (is_wp_error($new_title)) return $new_title;
                 $result = $this->api->rename_tab($profile['spreadsheet_id'], intval($tab->sheet_id), $new_title);
                 if (is_wp_error($result)) return $result;
 
@@ -290,6 +291,7 @@ class BIS_Sync {
         }
 
         $title = $this->next_tab_title($profile['spreadsheet_id']);
+        if (is_wp_error($title)) return $title;
         $sheet = $this->api->create_tab($profile['spreadsheet_id'], $title);
         if (is_wp_error($sheet)) return $sheet;
 
@@ -323,7 +325,7 @@ class BIS_Sync {
 
     private function next_tab_title($spreadsheet_id) {
         $metadata = $this->api->metadata($spreadsheet_id, true);
-        if (is_wp_error($metadata)) return 'curso_' . time();
+        if (is_wp_error($metadata)) return $metadata;
 
         $max = 0;
         foreach ((array) ($metadata['sheets'] ?? array()) as $sheet) {
@@ -461,7 +463,7 @@ class BIS_Sync {
 
         if (!$classes) {
             return array(array(
-                'id' => '',
+                'id' => 'sem-turma',
                 'nome' => 'Inscrições',
                 'data_inicio' => '',
                 'data_fim' => '',
