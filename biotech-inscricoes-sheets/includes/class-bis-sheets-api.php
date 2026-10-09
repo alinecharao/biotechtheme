@@ -6,7 +6,9 @@ class BIS_Sheets_API {
     private $base = 'https://sheets.googleapis.com/v4/spreadsheets';
     private $metadata_cache = array();
 
-    public function __construct(BIS_Google_Auth $auth) { $this->auth = $auth; }
+    public function __construct(BIS_Google_Auth $auth) {
+        $this->auth = $auth;
+    }
 
     public static function spreadsheet_id($input) {
         $input = trim((string) $input);
@@ -14,172 +16,298 @@ class BIS_Sheets_API {
         return preg_match('/^[a-zA-Z0-9_-]{20,}$/', $input) ? $input : '';
     }
 
-    public function metadata($spreadsheet_id) {
+    public function metadata($spreadsheet_id, $refresh = false) {
         $key = (string) $spreadsheet_id;
-        if (array_key_exists($key, $this->metadata_cache)) return $this->metadata_cache[$key];
+        if (!$refresh && isset($this->metadata_cache[$key])) return $this->metadata_cache[$key];
 
-        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '?fields=spreadsheetId,properties.title,sheets.properties');
+        $result = $this->request(
+            'GET',
+            '/' . rawurlencode($spreadsheet_id) . '?fields=spreadsheetId,properties.title,sheets.properties'
+        );
         if (!is_wp_error($result)) $this->metadata_cache[$key] = $result;
         return $result;
     }
 
     public function create_tab($spreadsheet_id, $title) {
-        $result = $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
-            'addSheet' => array('properties' => array('title' => $title, 'gridProperties' => array('frozenRowCount' => 5))),
-        ))));
+        $result = $this->request(
+            'POST',
+            '/' . rawurlencode($spreadsheet_id) . ':batchUpdate',
+            array(
+                'requests' => array(
+                    array(
+                        'addSheet' => array(
+                            'properties' => array(
+                                'title' => $title,
+                                'gridProperties' => array(
+                                    'frozenRowCount' => 5,
+                                    'rowCount' => 2000,
+                                    'columnCount' => 14,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+        );
         if (is_wp_error($result)) return $result;
         unset($this->metadata_cache[(string) $spreadsheet_id]);
-        return isset($result['replies'][0]['addSheet']['properties']) ? $result['replies'][0]['addSheet']['properties'] : new WP_Error('bis_tab_create', 'O Google não retornou os dados da nova aba.');
+        return $result['replies'][0]['addSheet']['properties'] ?? new WP_Error('bis_tab_create', 'O Google não retornou a nova guia.');
     }
 
     public function rename_tab($spreadsheet_id, $sheet_id, $title) {
-        $result = $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
-            'updateSheetProperties' => array(
-                'properties' => array('sheetId' => intval($sheet_id), 'title' => $title),
-                'fields' => 'title',
-            ),
-        ))));
+        $result = $this->request(
+            'POST',
+            '/' . rawurlencode($spreadsheet_id) . ':batchUpdate',
+            array(
+                'requests' => array(
+                    array(
+                        'updateSheetProperties' => array(
+                            'properties' => array(
+                                'sheetId' => intval($sheet_id),
+                                'title' => $title,
+                            ),
+                            'fields' => 'title',
+                        ),
+                    ),
+                ),
+            )
+        );
         if (!is_wp_error($result)) unset($this->metadata_cache[(string) $spreadsheet_id]);
         return $result;
     }
 
     public function delete_tab($spreadsheet_id, $sheet_id) {
-        $result = $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
-            'deleteSheet' => array('sheetId' => intval($sheet_id)),
-        ))));
+        $result = $this->request(
+            'POST',
+            '/' . rawurlencode($spreadsheet_id) . ':batchUpdate',
+            array('requests' => array(array('deleteSheet' => array('sheetId' => intval($sheet_id)))))
+        );
         if (!is_wp_error($result)) unset($this->metadata_cache[(string) $spreadsheet_id]);
         return $result;
     }
 
-    /**
-     * Ordena as inscrições pelo ID do pedido (coluna M, oculta).
-     * Como os IDs são crescentes, isso mantém a mesma ordem cronológica
-     * mesmo quando uma inscrição antiga é recuperada posteriormente.
-     */
-    public function sort_tab($spreadsheet_id, $sheet_id) {
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array(
-            'sortRange' => array(
-                'range' => array(
-                    'sheetId' => intval($sheet_id),
-                    'startRowIndex' => 5,
-                    'startColumnIndex' => 0,
-                    'endColumnIndex' => 13,
-                ),
-                'sortSpecs' => array(
-                    array(
-                        'dimensionIndex' => 12,
-                        'sortOrder' => 'ASCENDING',
-                    ),
-                ),
-            ),
-        ))));
+    public function read_values($spreadsheet_id, $title, $cells = 'A1:N') {
+        return $this->request(
+            'GET',
+            '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, $cells))
+        );
     }
 
-    public function setup_tab($spreadsheet_id, $sheet_id, $title, $course, $class_name, $date) {
-        $range = $this->range($title, 'A1:M5');
-        $rows = array(
-            array('Curso', $course),
-            array('Turma', $class_name),
-            array('Data', $date),
-            array(),
-            array('Data do pedido', 'Nome', 'E-mail', 'CPF', 'Telefone', 'Gênero', 'Como nos encontrou', 'Tipo profissional', 'Comprovação / CRMV', 'Método de pagamento', 'Valor', 'Cupom', 'ID do pedido'),
+    public function write_tab($spreadsheet_id, $sheet_id, $title, $course_name, $class_name, $date_text, $rows, $format = false) {
+        $existing = $this->read_values($spreadsheet_id, $title, 'A1:N');
+        if (is_wp_error($existing)) return $existing;
+
+        $headers = array(
+            'Data da inscrição',
+            'Nome',
+            'E-mail',
+            'CPF',
+            'Telefone',
+            'Gênero',
+            'Como nos encontrou',
+            'Tipo de inscrição',
+            'Comprovante / CRMV',
+            'Método de pagamento',
+            'Valor',
+            'Cupom',
+            'Status',
+            'ID do pedido',
         );
-        $write = $this->request('PUT', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($range) . '?valueInputOption=USER_ENTERED', array('values' => $rows));
+
+        $values = array(
+            array('Nome do curso', $course_name),
+            array('Turma', $class_name),
+            array('Data', $date_text),
+            array(),
+            $headers,
+        );
+
+        foreach ($rows as $row) $values[] = array_values($row);
+
+        $old_count = !empty($existing['values']) ? count($existing['values']) : 0;
+        $target_count = max(count($values), $old_count, 5);
+        while (count($values) < $target_count) $values[] = array_fill(0, 14, '');
+
+        $range = $this->range($title, 'A1:N' . $target_count);
+        $write = $this->request(
+            'PUT',
+            '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($range) . '?valueInputOption=USER_ENTERED',
+            array('values' => $values)
+        );
         if (is_wp_error($write)) return $write;
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(
-            array('repeatCell' => array('range' => array('sheetId' => intval($sheet_id), 'startRowIndex' => 0, 'endRowIndex' => 3, 'startColumnIndex' => 0, 'endColumnIndex' => 2), 'cell' => array('userEnteredFormat' => array('textFormat' => array('bold' => true))), 'fields' => 'userEnteredFormat.textFormat.bold')),
-            array('repeatCell' => array('range' => array('sheetId' => intval($sheet_id), 'startRowIndex' => 4, 'endRowIndex' => 5, 'startColumnIndex' => 0, 'endColumnIndex' => 13), 'cell' => array('userEnteredFormat' => array('textFormat' => array('bold' => true, 'foregroundColor' => array('red' => 1, 'green' => 1, 'blue' => 1)), 'backgroundColor' => array('red' => 0.13, 'green' => 0.42, 'blue' => 0.24))), 'fields' => 'userEnteredFormat')),
-            $this->body_format_request($sheet_id),
-            $this->currency_format_request($sheet_id),
-            array('updateDimensionProperties' => array('range' => array('sheetId' => intval($sheet_id), 'dimension' => 'COLUMNS', 'startIndex' => 12, 'endIndex' => 13), 'properties' => array('hiddenByUser' => true), 'fields' => 'hiddenByUser')),
-            array('autoResizeDimensions' => array('dimensions' => array('sheetId' => intval($sheet_id), 'dimension' => 'COLUMNS', 'startIndex' => 0, 'endIndex' => 12))),
-        )));
+
+        if ($format) {
+            $formatted = $this->format_tab($spreadsheet_id, $sheet_id);
+            if (is_wp_error($formatted)) return $formatted;
+        }
+
+        return true;
     }
 
     public function format_tab($spreadsheet_id, $sheet_id) {
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(
-            $this->body_format_request($sheet_id),
-            $this->currency_format_request($sheet_id),
-        )));
-    }
+        $sheet_id = intval($sheet_id);
+        $requests = array(
+            array(
+                'repeatCell' => array(
+                    'range' => array(
+                        'sheetId' => $sheet_id,
+                        'startRowIndex' => 0,
+                        'endRowIndex' => 3,
+                        'startColumnIndex' => 0,
+                        'endColumnIndex' => 2,
+                    ),
+                    'cell' => array(
+                        'userEnteredFormat' => array(
+                            'backgroundColor' => array('red' => 1, 'green' => 1, 'blue' => 1),
+                            'textFormat' => array(
+                                'bold' => false,
+                                'foregroundColor' => array('red' => 0, 'green' => 0, 'blue' => 0),
+                            ),
+                        ),
+                    ),
+                    'fields' => 'userEnteredFormat',
+                ),
+            ),
+            array(
+                'repeatCell' => array(
+                    'range' => array(
+                        'sheetId' => $sheet_id,
+                        'startRowIndex' => 0,
+                        'endRowIndex' => 3,
+                        'startColumnIndex' => 0,
+                        'endColumnIndex' => 1,
+                    ),
+                    'cell' => array(
+                        'userEnteredFormat' => array(
+                            'textFormat' => array('bold' => true),
+                        ),
+                    ),
+                    'fields' => 'userEnteredFormat.textFormat.bold',
+                ),
+            ),
+            array(
+                'repeatCell' => array(
+                    'range' => array(
+                        'sheetId' => $sheet_id,
+                        'startRowIndex' => 4,
+                        'endRowIndex' => 5,
+                        'startColumnIndex' => 0,
+                        'endColumnIndex' => 14,
+                    ),
+                    'cell' => array(
+                        'userEnteredFormat' => array(
+                            'backgroundColor' => array('red' => 0.13, 'green' => 0.42, 'blue' => 0.24),
+                            'textFormat' => array(
+                                'bold' => true,
+                                'foregroundColor' => array('red' => 1, 'green' => 1, 'blue' => 1),
+                            ),
+                        ),
+                    ),
+                    'fields' => 'userEnteredFormat',
+                ),
+            ),
+            array(
+                'repeatCell' => array(
+                    'range' => array(
+                        'sheetId' => $sheet_id,
+                        'startRowIndex' => 5,
+                        'endRowIndex' => 2000,
+                        'startColumnIndex' => 0,
+                        'endColumnIndex' => 14,
+                    ),
+                    'cell' => array(
+                        'userEnteredFormat' => array(
+                            'backgroundColor' => array('red' => 1, 'green' => 1, 'blue' => 1),
+                            'textFormat' => array(
+                                'bold' => false,
+                                'foregroundColor' => array('red' => 0, 'green' => 0, 'blue' => 0),
+                            ),
+                        ),
+                    ),
+                    'fields' => 'userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.bold,userEnteredFormat.textFormat.foregroundColor',
+                ),
+            ),
+            array(
+                'repeatCell' => array(
+                    'range' => array(
+                        'sheetId' => $sheet_id,
+                        'startRowIndex' => 5,
+                        'endRowIndex' => 2000,
+                        'startColumnIndex' => 10,
+                        'endColumnIndex' => 11,
+                    ),
+                    'cell' => array(
+                        'userEnteredFormat' => array(
+                            'numberFormat' => array(
+                                'type' => 'CURRENCY',
+                                'pattern' => '"R$"#,##0.00',
+                            ),
+                        ),
+                    ),
+                    'fields' => 'userEnteredFormat.numberFormat',
+                ),
+            ),
+            array(
+                'updateDimensionProperties' => array(
+                    'range' => array(
+                        'sheetId' => $sheet_id,
+                        'dimension' => 'COLUMNS',
+                        'startIndex' => 13,
+                        'endIndex' => 14,
+                    ),
+                    'properties' => array('hiddenByUser' => true),
+                    'fields' => 'hiddenByUser',
+                ),
+            ),
+            array(
+                'autoResizeDimensions' => array(
+                    'dimensions' => array(
+                        'sheetId' => $sheet_id,
+                        'dimension' => 'COLUMNS',
+                        'startIndex' => 0,
+                        'endIndex' => 13,
+                    ),
+                ),
+            ),
+        );
 
-    public function tab_has_values($spreadsheet_id, $title) {
-        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A1:M5')));
-        if (is_wp_error($result)) return $result;
-        return !empty($result['values']);
-    }
-
-    public function order_index($spreadsheet_id, $title) {
-        $result = $this->request('GET', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'M6:M')));
-        if (is_wp_error($result)) return $result;
-        $index = array();
-        foreach ((array) (isset($result['values']) ? $result['values'] : array()) as $offset => $row) {
-            if (isset($row[0]) && $row[0] !== '') $index[(string) $row[0]] = $offset + 6;
-        }
-        return $index;
-    }
-
-    public function write_order($spreadsheet_id, $title, $row_number, $values) {
-        if ($row_number) {
-            return $this->request('PUT', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A' . intval($row_number) . ':M' . intval($row_number))) . '?valueInputOption=USER_ENTERED', array('values' => array($values)));
-        }
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . '/values/' . rawurlencode($this->range($title, 'A:M')) . ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS', array('values' => array($values)));
-    }
-
-    public function delete_row($spreadsheet_id, $sheet_id, $row_number) {
-        return $this->request('POST', '/' . rawurlencode($spreadsheet_id) . ':batchUpdate', array('requests' => array(array('deleteDimension' => array('range' => array(
-            'sheetId' => intval($sheet_id), 'dimension' => 'ROWS', 'startIndex' => intval($row_number) - 1, 'endIndex' => intval($row_number),
-        ))))));
+        return $this->request(
+            'POST',
+            '/' . rawurlencode($spreadsheet_id) . ':batchUpdate',
+            array('requests' => $requests)
+        );
     }
 
     private function range($title, $cells) {
         return "'" . str_replace("'", "''", $title) . "'!" . $cells;
     }
 
-    private function body_format_request($sheet_id) {
-        return array('repeatCell' => array(
-            'range' => array('sheetId' => intval($sheet_id), 'startRowIndex' => 5, 'startColumnIndex' => 0, 'endColumnIndex' => 13),
-            'cell' => array('userEnteredFormat' => array(
-                'backgroundColor' => array('red' => 1, 'green' => 1, 'blue' => 1),
-                'textFormat' => array('bold' => false, 'foregroundColor' => array('red' => 0, 'green' => 0, 'blue' => 0)),
-            )),
-            'fields' => 'userEnteredFormat.backgroundColor,userEnteredFormat.textFormat.bold,userEnteredFormat.textFormat.foregroundColor',
-        ));
-    }
-
-    private function currency_format_request($sheet_id) {
-        return array('repeatCell' => array(
-            'range' => array('sheetId' => intval($sheet_id), 'startRowIndex' => 5, 'startColumnIndex' => 10, 'endColumnIndex' => 11),
-            'cell' => array('userEnteredFormat' => array('numberFormat' => array('type' => 'CURRENCY', 'pattern' => '"R$"#,##0.00'))),
-            'fields' => 'userEnteredFormat.numberFormat',
-        ));
-    }
-
     private function request($method, $path, $body = null) {
-        // Reserva conservadora: até 30 gravações por minuto em todo o plugin.
-        // O limite real é compartilhado com outras integrações do mesmo usuário/projeto.
-        if (strtoupper($method) !== 'GET') {
-            $bucket = 'bis_write_budget_' . floor(time() / 60);
-            $used = absint(get_transient($bucket));
-            if ($used >= 30) {
-                return new WP_Error('bis_rate_limited', 'Limite preventivo de gravações por minuto. O lote continuará automaticamente.');
-            }
-            set_transient($bucket, $used + 1, 2 * MINUTE_IN_SECONDS);
-        }
         $token = $this->auth->access_token();
         if (is_wp_error($token)) return $token;
-        $args = array('method' => $method, 'timeout' => 30, 'headers' => array('Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json'));
+
+        $args = array(
+            'method' => $method,
+            'timeout' => 30,
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $token,
+                'Content-Type' => 'application/json',
+            ),
+        );
         if ($body !== null) $args['body'] = wp_json_encode($body);
+
         $response = wp_remote_request($this->base . $path, $args);
         if (is_wp_error($response)) return $response;
+
         $code = wp_remote_retrieve_response_code($response);
         $decoded = json_decode(wp_remote_retrieve_body($response), true);
+
         if ($code < 200 || $code >= 300) {
-            $message = isset($decoded['error']['message']) ? $decoded['error']['message'] : 'Falha ao acessar o Google Sheets.';
-            // As cotas do Sheets podem retornar 429 ou 403 com "Quota exceeded".
-            $is_quota = $code === 429 || ($code === 403 && stripos($message, 'quota exceeded') !== false);
-            return new WP_Error($is_quota ? 'bis_rate_limited' : 'bis_google_' . $code, $message, array('status' => $code));
+            $message = $decoded['error']['message'] ?? 'Falha ao acessar o Google Sheets.';
+            $quota = $code === 429 || ($code === 403 && stripos($message, 'quota') !== false);
+            return new WP_Error($quota ? 'bis_rate_limited' : 'bis_google_' . $code, $message, array('status' => $code));
         }
+
         return is_array($decoded) ? $decoded : array();
     }
 }
