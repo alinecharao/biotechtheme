@@ -97,6 +97,9 @@ class BIS_Sync {
             'force' => $force ? 1 : 0,
             'tasks' => $tasks,
             'position' => 0,
+            'legacy_tabs' => $force ? $this->legacy_blank_candidates() : array(),
+            'legacy_position' => 0,
+            'legacy_removed' => 0,
             'synced' => 0,
             'skipped' => 0,
             'errors' => 0,
@@ -150,15 +153,48 @@ class BIS_Sync {
             }
         }
 
-        if ($state['position'] >= count($state['tasks'])) {
+        if ($state['position'] >= count($state['tasks'])
+            && $state['legacy_position'] < count($state['legacy_tabs'])) {
+            $legacy = $state['legacy_tabs'][$state['legacy_position']];
+            $values = $this->api->read_values($legacy['spreadsheet_id'], $legacy['title'], 'A1:N');
+
+            if (is_wp_error($values) && $values->get_error_code() === 'bis_rate_limited') {
+                // Aguarda o próximo ciclo sem avançar.
+            } else {
+                if (is_wp_error($values)) {
+                    $state['errors']++;
+                    $this->record_error($values, 0, 0);
+                } elseif (empty($values['values'])) {
+                    $deleted = $this->api->delete_tab($legacy['spreadsheet_id'], $legacy['sheet_id']);
+                    if (is_wp_error($deleted) && $deleted->get_error_code() === 'bis_rate_limited') {
+                        update_option('bis_reconcile_queue', $state, false);
+                        $this->release_lock();
+                        $this->schedule_queue_tick(75);
+                        return;
+                    }
+                    if (is_wp_error($deleted)) {
+                        $state['errors']++;
+                        $this->record_error($deleted, 0, 0);
+                    } else {
+                        $state['legacy_removed']++;
+                        $this->log('removed_blank_tab', 'Guia antiga e vazia removida: ' . $legacy['title'] . '.');
+                    }
+                }
+                $state['legacy_position']++;
+            }
+        }
+
+        if ($state['position'] >= count($state['tasks'])
+            && $state['legacy_position'] >= count($state['legacy_tabs'])) {
             $state['status'] = 'completed';
             $state['completed_at'] = time();
             $this->log(
                 'completed',
                 sprintf(
-                    'Reconciliação concluída: %d abas sincronizadas, %d sem alterações e %d erros.',
+                    'Reconciliação concluída: %d abas sincronizadas, %d sem alterações, %d guias antigas vazias removidas e %d erros.',
                     absint($state['synced']),
                     absint($state['skipped']),
+                    absint($state['legacy_removed']),
                     absint($state['errors'])
                 )
             );
@@ -214,6 +250,47 @@ class BIS_Sync {
         }
 
         return array_values($tasks);
+    }
+
+    private function legacy_blank_candidates() {
+        global $wpdb;
+        $profiles = (array) get_option('bis_sheet_profiles', array());
+        $spreadsheet_ids = array();
+
+        foreach ($profiles as $profile) {
+            if (!empty($profile['spreadsheet_id'])) $spreadsheet_ids[] = $profile['spreadsheet_id'];
+        }
+        $spreadsheet_ids = array_unique($spreadsheet_ids);
+
+        $candidates = array();
+        foreach ($spreadsheet_ids as $spreadsheet_id) {
+            $metadata = $this->api->metadata($spreadsheet_id, true);
+            if (is_wp_error($metadata)) continue;
+
+            foreach ((array) ($metadata['sheets'] ?? array()) as $sheet) {
+                $title = (string) ($sheet['properties']['title'] ?? '');
+                $sheet_id = intval($sheet['properties']['sheetId'] ?? 0);
+                if (!$sheet_id || preg_match('/^curso_\d+$/i', $title)) continue;
+
+                // Somente nomes gerados pelas versões antigas do plugin.
+                if (!preg_match('/^Curso(?:\s+-)?\s*(?:\d{1,2}\/\d{1,2}|\d+)?$/u', $title)) continue;
+
+                $mapped = $wpdb->get_var($wpdb->prepare(
+                    "SELECT id FROM {$wpdb->prefix}bis_sheet_tabs WHERE spreadsheet_id = %s AND sheet_id = %d LIMIT 1",
+                    $spreadsheet_id,
+                    $sheet_id
+                ));
+                if ($mapped) continue;
+
+                $candidates[] = array(
+                    'spreadsheet_id' => $spreadsheet_id,
+                    'sheet_id' => $sheet_id,
+                    'title' => $title,
+                );
+            }
+        }
+
+        return $candidates;
     }
 
     private function sync_class($course_id, $class_key, $force = false) {
