@@ -165,7 +165,7 @@ class BIS_Admin {
                     <p><label for="active_profile"><strong>Planilha ativa para novas turmas</strong></label></p>
                     <select name="active_profile" id="active_profile" required><?php foreach ($profiles as $key => $profile): ?><option value="<?php echo esc_attr($key); ?>" <?php selected($active_profile, $key); ?>><?php echo esc_html($profile['name']); ?></option><?php endforeach; ?></select>
                     <button class="button button-primary">Salvar planilha ativa</button>
-                    <p class="description">A troca vale somente para novas turmas. Turmas já criadas continuam na planilha anterior.</p>
+                    <p class="description">A planilha selecionada é o destino atual da sincronização. Ao usar “Reconstruir todas as abas”, todas as turmas com turma aberta são remapeadas para esta planilha.</p>
                 </form>
                 <table class="widefat striped" style="margin-top:15px"><thead><tr><th>Nome</th><th>ID da planilha</th><th></th></tr></thead><tbody><?php foreach ($profiles as $key => $profile): ?><tr><td><?php echo esc_html($profile['name']); ?><?php if ($active_profile === $key): ?> <strong>(ativa)</strong><?php endif; ?></td><td><code><?php echo esc_html($profile['spreadsheet_id']); ?></code></td><td><form method="post"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="delete_profile"><input type="hidden" name="profile_key" value="<?php echo esc_attr($key); ?>"><button class="button-link-delete">Remover</button></form></td></tr><?php endforeach; ?></tbody></table>
             <?php else: ?><p>Cadastre a primeira planilha. Ela será definida automaticamente como ativa.</p><?php endif; ?>
