@@ -2,15 +2,15 @@
 /**
  * Plugin Name: Biotech Inscrições no Sheets
  * Plugin URI: https://fazendaescolabiotech.com.br
- * Description: Sincroniza inscrições confirmadas dos cursos com abas organizadas por turma no Google Sheets.
- * Version: 1.4.3
+ * Description: Sincroniza inscrições dos cursos com uma aba por turma no Google Sheets, em ordem alfabética.
+ * Version: 2.0.0
  * Author: Fazenda Escola Biotech
  * Requires at least: 5.8
  * Requires PHP: 7.4
  */
 if (!defined('ABSPATH')) exit;
 
-define('BIS_VERSION', '1.4.3');
+define('BIS_VERSION', '2.0.0');
 define('BIS_PATH', plugin_dir_path(__FILE__));
 
 require_once BIS_PATH . 'includes/class-bis-google-auth.php';
@@ -66,6 +66,15 @@ final class BIS_Plugin {
     }
 
     private function __construct() {
+        // A v2 usa uma fila incompatível com a arquitetura antiga.
+        // Mantemos credenciais, planilhas e mapeamentos de abas, mas descartamos
+        // somente a fila pendente da versão anterior.
+        if (get_option('bis_plugin_version') !== BIS_VERSION) {
+            wp_clear_scheduled_hook('bis_reconcile_queue_tick');
+            delete_option('bis_reconcile_queue');
+            update_option('bis_plugin_version', BIS_VERSION, false);
+        }
+
         $this->auth = new BIS_Google_Auth();
         $this->api = new BIS_Sheets_API($this->auth);
         $this->sync = new BIS_Sync($this->api);

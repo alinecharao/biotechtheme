@@ -108,7 +108,7 @@ class BIS_Admin {
             delete_transient('bis_sync_result_' . get_current_user_id());
             $result = is_array($result) ? $result : array();
             if (!empty($result['queued'])) {
-                $messages[$notice] = sprintf('Reconciliação iniciada em segundo plano para %d pedidos. Acompanhe o progresso nesta página.', absint($result['checked'] ?? 0));
+                $messages[$notice] = sprintf('Reconstrução iniciada em segundo plano para %d abas/turmas. Acompanhe o progresso nesta página.', absint($result['checked'] ?? 0));
             } else {
             $messages[$notice] = sprintf(
                 '%d pedidos verificados: %d sincronizados, %d ignorados, %d guias renomeadas, %d cabeçalhos recuperados e %d com erro.',
@@ -142,7 +142,7 @@ class BIS_Admin {
         $connection = $this->sync->connection_check();
         ?>
         <div class="wrap"><h1>Inscrições no Google Sheets</h1>
-        <p>Envie inscrições confirmadas automaticamente para a planilha ativa, com uma aba para cada turma.</p>
+        <p>Cada turma possui uma aba própria no Google Sheets, alimentada automaticamente com as inscrições em ordem alfabética.</p>
 
         <div class="card" style="max-width:900px"><h2>1. Conexão Google</h2>
         <?php if ($this->auth->is_connected()): ?>
@@ -175,13 +175,14 @@ class BIS_Admin {
         <div class="card" style="max-width:900px"><h2>3. Sincronização</h2>
             <?php if (($queue['status'] ?? '') === 'running'): ?>
                 <div class="notice notice-info inline"><p><strong>Reconciliação em andamento:</strong>
-                    <?php echo absint($queue['position'] ?? 0); ?> de <?php echo count($queue['ids'] ?? array()); ?> pedidos processados.
-                    As etapas restantes (recuperação de cabeçalhos e ordenação) também são executadas em segundo plano.
+                    <?php echo absint($queue['position'] ?? 0); ?> de <?php echo count($queue['tasks'] ?? array()); ?> abas/turmas processadas.
+                    Cada aba é reconstruída integralmente e já gravada em ordem alfabética.
                     Atualize esta página para acompanhar. Não inicie outra reconciliação.</p></div>
             <?php elseif (($queue['status'] ?? '') === 'completed'): ?>
                 <div class="notice notice-success inline"><p><strong>Última reconciliação concluída:</strong>
-                    <?php echo absint($queue['synced'] ?? 0); ?> inscrições sincronizadas,
-                    <?php echo absint($queue['blank_repaired'] ?? 0); ?> cabeçalhos recuperados,
+                    <?php echo absint($queue['synced'] ?? 0); ?> abas sincronizadas,
+                    <?php echo absint($queue['skipped'] ?? 0); ?> sem alterações,
+                    <?php echo absint($queue['legacy_removed'] ?? 0); ?> guias antigas vazias removidas,
                     <?php echo absint($queue['errors'] ?? 0); ?> erros.</p></div>
             <?php endif; ?>
             <?php if (is_wp_error($connection)): ?>
@@ -190,7 +191,7 @@ class BIS_Admin {
                 <div class="notice notice-success inline"><p><strong>Planilha acessível:</strong> <?php echo esc_html($connection['title']); ?></p></div>
             <?php endif; ?>
             <form method="post"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="save_automation"><label><input type="checkbox" name="auto_sync" value="1" <?php checked(get_option('bis_auto_sync', '1'), '1'); ?>> Reconciliação automática a cada hora</label> <button class="button">Salvar</button></form>
-            <form method="post" style="margin-top:12px"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="manual_sync"><button class="button button-primary" <?php disabled(($queue['status'] ?? '') === 'running'); ?>>Iniciar reconciliação completa</button><p class="description">Processamento em lotes de até 5 pedidos, com intervalos de aproximadamente 75 segundos. Não é necessário manter a página aberta. O WP-Cron precisa estar funcionando.</p></form>
+            <form method="post" style="margin-top:12px"><?php wp_nonce_field('bis_admin_action'); ?><input type="hidden" name="bis_action" value="manual_sync"><button class="button button-primary" <?php disabled(($queue['status'] ?? '') === 'running'); ?>>Reconstruir todas as abas</button><p class="description">Regrava cada turma com cabeçalho padronizado, inscritos em ordem alfabética e links de comprovante quando existirem. São processadas até 2 abas por ciclo para respeitar a cota do Google. Não é necessário manter a página aberta.</p></form>
         </div>
 
         <div class="card" style="max-width:900px"><h2>Atividade recente</h2><table class="widefat striped"><thead><tr><th>Data</th><th>Pedido</th><th>Resultado</th><th>Detalhe</th></tr></thead><tbody><?php if (!$logs): ?><tr><td colspan="4">Nenhuma sincronização registrada.</td></tr><?php else: foreach ($logs as $log): ?><tr><td><?php echo esc_html($log->created_at); ?></td><td><?php echo $log->order_id ? '#' . absint($log->order_id) : '—'; ?></td><td><?php echo esc_html($log->status); ?></td><td><?php echo esc_html($log->message); ?></td></tr><?php endforeach; endif; ?></tbody></table></div>
