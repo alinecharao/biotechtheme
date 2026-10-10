@@ -48,8 +48,6 @@ class BIS_Sync {
     }
 
     public function ensure_course_tabs($course_id) {
-        if ($this->course_has_no_open_class($course_id)) return 0;
-
         $classes = $this->course_classes($course_id);
         if (!$classes) return 0;
 
@@ -267,11 +265,6 @@ class BIS_Sync {
         ));
 
         foreach ($course_ids as $course_id) {
-            if ($this->course_has_no_open_class($course_id)) {
-                $this->log('ignored', 'Curso ignorado: marcado como sem turma aberta.', 0, $course_id);
-                continue;
-            }
-
             $classes = $this->course_classes($course_id);
             if (!$classes) {
                 $this->log('ignored', 'Curso ignorado: nenhuma turma cadastrada foi encontrada.', 0, $course_id);
@@ -292,7 +285,7 @@ class BIS_Sync {
             $rows = $wpdb->get_results("SELECT DISTINCT curso_id, turma_id FROM {$orders} ORDER BY curso_id ASC, turma_id ASC");
             foreach ((array) $rows as $row) {
                 $course_id = absint($row->curso_id);
-                if (!$course_id || $this->course_has_no_open_class($course_id)) continue;
+                if (!$course_id) continue;
 
                 $key = $this->normalize_class_key($row->turma_id ?? '');
                 $class = $this->find_existing_class($course_id, $key);
@@ -350,8 +343,6 @@ class BIS_Sync {
     }
 
     private function sync_class($course_id, $class_key, $force = false) {
-        if ($this->course_has_no_open_class($course_id)) return 'skipped';
-
         $course = get_post($course_id);
         if (!$course || $course->post_type !== 'curso') {
             return new WP_Error('bis_course_missing', 'Curso não encontrado.');
@@ -638,8 +629,6 @@ class BIS_Sync {
     }
 
     private function course_classes($course_id) {
-        if ($this->course_has_no_open_class($course_id)) return array();
-
         $classes = get_post_meta($course_id, '_curso_turmas', true);
         if (!is_array($classes) || !$classes) $classes = get_post_meta($course_id, '_turmas', true);
         if (!is_array($classes) || !$classes) return array();
@@ -660,10 +649,6 @@ class BIS_Sync {
         }
 
         return array_values($valid);
-    }
-
-    private function course_has_no_open_class($course_id) {
-        return get_post_meta($course_id, '_curso_sem_turma_aberta', true) === '1';
     }
 
     private function find_existing_class($course_id, $class_key) {
