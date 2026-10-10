@@ -253,19 +253,32 @@ class BIS_Sync {
     private function collect_tasks() {
         $tasks = array();
 
-        $course_ids = get_posts(array(
-            'post_type' => 'curso',
-            'post_status' => array('publish', 'draft', 'private', 'future'),
-            'posts_per_page' => -1,
-            'fields' => 'ids',
-            'orderby' => 'ID',
-            'order' => 'ASC',
+        global $wpdb;
+
+        // Buscar diretamente no banco para não depender de uma lista fixa de
+        // post_status. Assim entram também cursos em pending ou qualquer status
+        // customizado, desde que não sejam lixeira/auto-draft.
+        $course_ids = array_map('intval', $wpdb->get_col(
+            "SELECT ID
+             FROM {$wpdb->posts}
+             WHERE post_type = 'curso'
+               AND post_status NOT IN ('trash', 'auto-draft')
+             ORDER BY ID ASC"
         ));
 
         foreach ($course_ids as $course_id) {
-            if ($this->course_has_no_open_class($course_id)) continue;
+            if ($this->course_has_no_open_class($course_id)) {
+                $this->log('ignored', 'Curso ignorado: marcado como sem turma aberta.', 0, $course_id);
+                continue;
+            }
 
-            foreach ($this->course_classes($course_id) as $class) {
+            $classes = $this->course_classes($course_id);
+            if (!$classes) {
+                $this->log('ignored', 'Curso ignorado: nenhuma turma cadastrada foi encontrada.', 0, $course_id);
+                continue;
+            }
+
+            foreach ($classes as $class) {
                 $key = $this->class_key($class);
                 $tasks[$course_id . '|' . $key] = array(
                     'course_id' => absint($course_id),
@@ -274,7 +287,6 @@ class BIS_Sync {
             }
         }
 
-        global $wpdb;
         $orders = $wpdb->prefix . 'cursos_orders';
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $orders)) === $orders) {
             $rows = $wpdb->get_results("SELECT DISTINCT curso_id, turma_id FROM {$orders} ORDER BY curso_id ASC, turma_id ASC");
