@@ -236,6 +236,28 @@ class BIS_Sync {
             $profile['spreadsheet_id']
         ));
 
+        // Remover da planilha ativa apenas abas gerenciadas pelo plugin que
+        // pertencem a turmas já encerradas ou que não existem mais no cadastro.
+        $mapped_tabs = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$table} WHERE spreadsheet_id = %s ORDER BY id ASC",
+            $profile['spreadsheet_id']
+        ));
+        foreach ((array) $mapped_tabs as $mapped_tab) {
+            $class = $this->find_existing_class(absint($mapped_tab->course_id), (string) $mapped_tab->class_key);
+            if ($class) continue;
+
+            $deleted = $this->api->delete_tab($profile['spreadsheet_id'], intval($mapped_tab->sheet_id));
+            if (is_wp_error($deleted)) return $deleted;
+
+            $wpdb->delete($table, array('id' => absint($mapped_tab->id)), array('%d'));
+            $this->log(
+                'removed_old_tab',
+                'Guia removida da reconstrução: turma encerrada ou não encontrada.',
+                0,
+                absint($mapped_tab->course_id)
+            );
+        }
+
         // Limpar hashes antigos para garantir que a primeira reconstrução da
         // planilha nova grave todas as turmas, mesmo que o conteúdo seja igual.
         $option_names = $wpdb->get_col(
@@ -348,7 +370,8 @@ class BIS_Sync {
             return new WP_Error('bis_course_missing', 'Curso não encontrado.');
         }
 
-        $class = $this->find_class($course_id, $class_key);
+        $class = $this->find_existing_class($course_id, $class_key);
+        if (!$class) return 'skipped';
         $profile = $this->profile_for_course_class($course_id, $class_key);
         if (!$profile) return new WP_Error('bis_no_profile', 'Defina a planilha ativa nas configurações do plugin.');
 
@@ -642,8 +665,26 @@ class BIS_Sync {
             $start = trim((string) ($class['data_inicio'] ?? ''));
             $end = trim((string) ($class['data_fim'] ?? ''));
 
-            // Só considerar uma turma real. Registros completamente vazios não viram aba.
+            // Só considerar uma turma real.
             if ($id === '' && $name === '' && $start === '' && $end === '') continue;
+
+            // "Recente" = turma que ainda não terminou.
+            // Se houver data_fim, ela prevalece; caso contrário usamos data_inicio.
+            $reference_date = $end !== '' ? $end : $start;
+            if ($reference_date === '') {
+                $this->log('ignored', 'Turma ignorada: sem data para determinar se ainda é atual.', 0, $course_id);
+                continue;
+            }
+
+            $reference_ts = strtotime($reference_date . ' 23:59:59');
+            if (!$reference_ts) {
+                $this->log('ignored', 'Turma ignorada: data inválida.', 0, $course_id);
+                continue;
+            }
+
+            if ($reference_ts < current_time('timestamp')) {
+                continue;
+            }
 
             $valid[] = $class;
         }
